@@ -64,8 +64,6 @@ class chess_board:
 
         self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
 
-        self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
-
         self.create_piece(king, "white", 0, 4)
 
         self.create_piece(queen, "white", 0, 3)
