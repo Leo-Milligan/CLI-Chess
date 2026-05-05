@@ -38,15 +38,3 @@ class chess_board:
 
         for i in range(self.num_rows):
             self.create_piece(pawn, "white", 1, i)
-
-        
-
-
-
-
-
-grid = chess_board()
-grid.set_board()
-print(grid.board)        
-
-        
