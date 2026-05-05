@@ -39,7 +39,7 @@ class chess_board:
         self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
 
     def create_piece(self, piece_type, colour, row, col):
-
+      
         if piece_type not in valid_pieces:
             raise NameError(f"That is not a valid piece. Valid pieces are {valid_pieces}.")
         elif colour not in ("white", "black"):
@@ -63,6 +63,21 @@ class chess_board:
     def set_board(self):
 
         self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
+
+        self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
+
+        self.create_piece(king, "white", 0, 4)
+
+        self.create_piece(queen, "white", 0, 3)
+
+        self.create_piece(rook, "white", 0, 0)
+        self.create_piece(rook, "white", 0, self.num_cols-1)
+
+        self.create_piece(bishop, "white", 0, 2)
+        self.create_piece(bishop, "white", 0, self.num_cols-3)
+
+        self.create_piece(knight, "white", 0, 1)
+        self.create_piece(knight, "white", 0, self.num_cols-2)
 
         for i in range(self.num_rows):
             self.create_piece(pawn, "white", 1, i)
@@ -94,9 +109,3 @@ class chess_board:
                 string += "+---"
             string += "+"
             print(string)
-
-grid = chess_board()
-
-grid.set_board()
-
-grid.show_board()
