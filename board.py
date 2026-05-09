@@ -7,7 +7,12 @@ from Pieces.bishop import bishop
 from Pieces.knight import knight
 from Pieces.pawn import pawn
 
-valid_pieces = (king, queen, rook, bishop, knight, pawn)
+piece_types = {king:"king", 
+               queen:"queen", 
+               rook:"rook", 
+               bishop:"bishop", 
+               knight:"knight", 
+               pawn:"pawn"}
 
 piece_symbols = {
             "white_king": "♔",
@@ -40,8 +45,8 @@ class chess_board:
 
     def create_piece(self, piece_type, colour, row, col):
       
-        if piece_type not in valid_pieces:
-            raise NameError(f"That is not a valid piece. Valid pieces are {valid_pieces}.")
+        if piece_type not in piece_types:
+            raise NameError(f"That is not a valid piece. Valid pieces are {piece_types}.")
         elif colour not in ("white", "black"):
             raise NameError("That is not a valid colour. Valid colours are 'white' and 'black'.")
         elif (row < 0) | (col < 0):
@@ -80,6 +85,22 @@ class chess_board:
         for i in range(self.num_rows):
             self.create_piece(pawn, "white", 1, i)
 
+        self.mirror_board()
+
+    def mirror_board(self):
+        
+        for col in range(self.num_cols):
+            for row in range(self.num_rows):
+
+                piece_name = str(self.board[col][row])
+
+                for piece in piece_types:
+                    if piece_types[piece] in piece_name:
+                        piece_type = piece
+
+                if "white" in piece_name and self.board[col][row] != None:
+                    self.create_piece(piece_type, "black", self.num_cols-col-1, row)
+
     def show_board(self):
 
         # printing top line
@@ -107,3 +128,7 @@ class chess_board:
                 string += "+---"
             string += "+"
             print(string)
+
+grid = chess_board()
+grid.set_board()
+grid.show_board()
