@@ -3,10 +3,8 @@
 class rook:
     def __init__(self, colour, board) -> None:
         self.colour = colour
+        self.piece_name = self.__class__.__name__
         self.board = board
-
-    def __str__(self) -> str:
-        return f"{self.colour}_{self.__class__.__name__}"
 
     def move_piece(self, initial_position, final_position, take_piece_flag):
 

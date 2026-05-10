@@ -7,27 +7,28 @@ from Pieces.bishop import bishop
 from Pieces.knight import knight
 from Pieces.pawn import pawn
 
-piece_types = {king:"king", 
-               queen:"queen", 
-               rook:"rook", 
-               bishop:"bishop", 
-               knight:"knight", 
-               pawn:"pawn"}
+piece_types = [king,
+               queen,
+               rook,
+               bishop,
+               knight,
+               pawn]
 
-piece_symbols = {
-            "white_king": "♔",
-            "white_queen": "♕",
-            "white_rook": "♖",
-            "white_bishop": "♗",
-            "white_knight": "♘",
-            "white_pawn": "♙",
-            "black_king": "♚",
-            "black_queen": "♛",
-            "black_rook": "♜",
-            "black_bishop": "♝",
-            "black_knight": "♞",
-            "black_pawn": "♟"
-        }
+piece_symbols = {"white": {"king": "♔",
+                           "queen": "♕",
+                           "rook": "♖",
+                           "bishop": "♗",
+                           "knight": "♘",
+                           "pawn": "♙"
+                           },
+
+                 "black": {"king": "♚",
+                           "queen": "♛",
+                           "rook": "♜",
+                           "bishop": "♝",
+                           "knight": "♞",
+                           "pawn": "♟"}
+                 }
 
 class chess_board:
     def __init__(self, num_rows = 8, num_cols = 8) -> None:
@@ -46,15 +47,15 @@ class chess_board:
     def create_piece(self, piece_type, colour, row, col):
       
         if piece_type not in piece_types:
-            raise NameError(f"That is not a valid piece. Valid pieces are {piece_types}.")
+            raise NameError(f"That is not a valid piece type.")
         elif colour not in ("white", "black"):
-            raise NameError("That is not a valid colour. Valid colours are 'white' and 'black'.")
+            raise NameError("That is not a valid colour.")
         elif (row < 0) | (col < 0):
             raise ValueError("The row number and column number must be greater than one.")
         elif (row > self.num_rows - 1) | (col > self.num_cols - 1):
             raise NameError("The column or row selected exceeds the board size.")
 
-        self.board[row][col] = piece_type(colour)
+        self.board[row][col] = piece_type(colour, self)
 
     def remove_piece(self, row, col):
 
@@ -92,13 +93,15 @@ class chess_board:
         for col in range(self.num_cols):
             for row in range(self.num_rows):
 
-                piece_name = str(self.board[col][row])
+                cell_contents = self.board[col][row]
 
-                for piece in piece_types:
-                    if piece_types[piece] in piece_name:
-                        piece_type = piece
+                if  cell_contents == None:
+                    continue
 
-                if "white" in piece_name and self.board[col][row] != None:
+                piece_type = type(cell_contents)
+                colour = cell_contents.colour
+
+                if (colour == "white") & piece_type in piece_types:
                     self.create_piece(piece_type, "black", self.num_cols-col-1, row)
 
     def show_board(self):
@@ -114,11 +117,16 @@ class chess_board:
         for col in range(self.num_cols):
             string = ""
             for row in range(self.num_rows):
-                if self.board[col][row] == None:
+
+                cell_contents = self.board[col][row]
+
+                if cell_contents == None:
                     piece_symbol = " "
                 else:
-                    piece_name = str(self.board[col][row])
-                    piece_symbol = piece_symbols[piece_name]
+                    piece_name = cell_contents.piece_name
+                    piece_colour = cell_contents.colour
+                    piece_symbol = piece_symbols[piece_colour][piece_name]
+
                 string += f"| {piece_symbol} "
             string += "|"
             print(string)
