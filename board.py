@@ -59,7 +59,7 @@ class chess_board:
 
     def remove_piece(self, row, col):
 
-        if (row <= 0) | (col <= 0):
+        if (row < 0) | (col < 0):
             raise ValueError("The row number and column number must be greater than one.")
         elif (row > self.num_rows) | (col > self.num_cols):
             raise NameError("The column or row selected exceeds the board size.")
@@ -136,7 +136,3 @@ class chess_board:
                 string += "+---"
             string += "+"
             print(string)
-
-grid = chess_board()
-grid.set_board()
-grid.show_board()
