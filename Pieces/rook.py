@@ -21,7 +21,12 @@ class rook:
         col_delta = col_f - col_i
         row_delta = row_f - row_i
 
-        if not ((col_delta == 0) ^ (row_delta == 0)):
+        final_position_contents = self.chess_board.board[row_f][col_f]
+
+        if final_position_contents and final_position_contents.colour == self.colour:
+            return "Move obstructed."
+
+        if (col_delta == 0) == (row_delta == 0):
             return "Invalid move for this piece."
 
         col_step = col_delta / abs(col_delta) if col_delta != 0 else 0
@@ -38,14 +43,10 @@ class rook:
             else:
                 return "Move obstructed."
 
-        final_position_contents = self.chess_board.board[row_f][col_f]
-
-        if final_position_contents == None:
+        if not final_position_contents:
             self.chess_board.remove_piece(row_i, col_i)
             self.chess_board.create_piece(type(self), self.colour, row_f, col_f)
             return
-        elif final_position_contents == self.colour:
-            return "Move obstructed."
 
         if take_piece_flag == False:
 

@@ -13,6 +13,11 @@ class bishop:
         row_i, col_i = initial_position
         row_f, col_f = final_position
 
+        final_position_contents = self.chess_board.board[row_f][col_f]
+
+        if final_position_contents and final_position_contents.colour == self.colour:
+            return "Move obstructed."
+
         if any(dimension < 0 for dimension in (col_i, col_f, row_i, row_f)) | \
         any(col > (self.chess_board.num_cols -1) for col in (col_i, col_f)) | \
         any(row > (self.chess_board.num_rows -1) for row in (row_i, row_f)):
@@ -38,14 +43,10 @@ class bishop:
             else:
                 return "Move obstructed."
 
-        final_position_contents = self.chess_board.board[row_f][col_f]
-
-        if final_position_contents == None:
+        if not final_position_contents:
             self.chess_board.remove_piece(row_i, col_i)
             self.chess_board.create_piece(type(self), self.colour, row_f, col_f)
             return
-        elif final_position_contents == self.colour:
-            return "Move obstructed."
 
         if take_piece_flag == False:
 
