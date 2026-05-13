@@ -40,11 +40,10 @@ class knight:
 
         if take_piece_flag == False:
 
-            valid_answer = False
-            while valid_answer == False:
-                answer = input("Would you like to take the piece? (y/n)").lower()
-                if (answer == "y") | (answer == "n"):
-                    valid_answer = True
+            while True:
+                answer = input("Would you like to take the piece? (y/n) ").lower()
+                if answer in ("y", "n"):
+                    break
 
             if answer == "n":
                 return "Move aborted."

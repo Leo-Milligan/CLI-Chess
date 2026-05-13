@@ -36,7 +36,7 @@ class rook:
 
         while intermediate_position != final_position:
             intermediate_position_contents = self.chess_board.board[int(intermediate_position[0])][int(intermediate_position[1])]
-            if intermediate_position_contents == None:
+            if not intermediate_position_contents:
                 intermediate_position[0] += row_step
                 intermediate_position[1] += col_step
                 continue
@@ -50,11 +50,10 @@ class rook:
 
         if take_piece_flag == False:
 
-            valid_answer = False
-            while valid_answer == False:
-                answer = input("Would you like to take the piece? (y/n)").lower()
-                if (answer == "y") | (answer == "n"):
-                    valid_answer = True
+            while True:
+                answer = input("Would you like to take the piece? (y/n) ").lower()
+                if answer in ("y", "n"):
+                    break
 
             if answer == "n":
                 return "Move aborted."
