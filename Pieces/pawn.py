@@ -19,18 +19,19 @@ class pawn:
         any(row > (self.chess_board.num_rows -1) for row in (row_i, row_f)):
             return "This is not a valid position on the board."
 
-        col_delta = col_f - col_i
-        row_delta = row_f - row_i
-
         final_position_contents = self.chess_board.board[row_f][col_f]
 
         if final_position_contents and final_position_contents.colour == self.colour:
             return "Move obstructed."
 
+        col_delta = col_f - col_i
+        row_delta = row_f - row_i
+
         valid_diagonal_direction = (col_delta == 1 and abs(row_delta == 1))
 
         if valid_diagonal_direction and not final_position_contents:
             return "Invalid move for this piece."
+
         if valid_diagonal_direction and final_position_contents:
             if take_piece_flag == False:
 
@@ -42,9 +43,8 @@ class pawn:
                 if answer == "n":
                     return "Move aborted."
 
+            self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
             self.chess_board.remove_piece(row_i, col_i)
-            self.chess_board.remove_piece(row_f, col_f)
-            self.chess_board.create_piece(type(self), self.colour, row_f, col_f)
             self.has_moved = True
             return
 
@@ -52,10 +52,10 @@ class pawn:
             return "Move obstructed."
 
         if self.has_moved:
-            if col_delta != 0 and row_delta != 1:
+            if col_delta != 0 or row_delta != 1:
                 return "Invalid move for this piece."
         elif not self.has_moved:
-            if col_delta != 0 and row_delta > 2:
+            if col_delta != 0 or row_delta > 2:
                 return "Invalid move for this piece."
 
         col_step = col_delta / abs(col_delta) if col_delta != 0 else 0
@@ -72,7 +72,7 @@ class pawn:
             else:
                 return "Move obstructed."
 
+        self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
         self.chess_board.remove_piece(row_i, col_i)
-        self.chess_board.create_piece(type(self), self.colour, row_f, col_f)
         self.has_moved = True
         return

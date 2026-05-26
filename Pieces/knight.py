@@ -34,8 +34,8 @@ class knight:
 
 
         if not final_position_contents:
+            self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
             self.chess_board.remove_piece(row_i, col_i)
-            self.chess_board.create_piece(type(self), self.colour, row_f, col_f)
             return
 
         if take_piece_flag == False:
@@ -48,6 +48,5 @@ class knight:
             if answer == "n":
                 return "Move aborted."
 
+        self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
         self.chess_board.remove_piece(row_i, col_i)
-        self.chess_board.remove_piece(row_f, col_f)
-        self.chess_board.create_piece(type(self), self.colour, row_f, col_f)

@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 
-from Pieces.king import king
-from Pieces.queen import queen
-from Pieces.rook import rook
-from Pieces.bishop import bishop
-from Pieces.knight import knight
-from Pieces.pawn import pawn
+from Pieces import *
 
 piece_types = [king,
                queen,
@@ -136,3 +131,9 @@ class chess_board:
                 string += "+---"
             string += "+"
             print(string)
+
+grid = chess_board()
+grid.create_piece(queen, "white", 1,1)
+grid.show_board()
+grid.board[1][1].move_piece([1,1],[5,2],False)
+grid.show_board()

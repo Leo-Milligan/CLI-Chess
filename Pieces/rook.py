@@ -18,15 +18,17 @@ class rook:
         any(row > (self.chess_board.num_rows -1) for row in (row_i, row_f)):
             return "This is not a valid position on the board."
 
-        col_delta = col_f - col_i
-        row_delta = row_f - row_i
-
         final_position_contents = self.chess_board.board[row_f][col_f]
 
         if final_position_contents and final_position_contents.colour == self.colour:
             return "Move obstructed."
 
-        if (col_delta == 0) == (row_delta == 0):
+        col_delta = col_f - col_i
+        row_delta = row_f - row_i
+
+        is_straight = (col_delta == 0) or (row_delta == 0)
+
+        if not is_straight:
             return "Invalid move for this piece."
 
         col_step = col_delta / abs(col_delta) if col_delta != 0 else 0
@@ -44,8 +46,8 @@ class rook:
                 return "Move obstructed."
 
         if not final_position_contents:
+            self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
             self.chess_board.remove_piece(row_i, col_i)
-            self.chess_board.create_piece(type(self), self.colour, row_f, col_f)
             return
 
         if take_piece_flag == False:
@@ -58,6 +60,5 @@ class rook:
             if answer == "n":
                 return "Move aborted."
 
+        self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
         self.chess_board.remove_piece(row_i, col_i)
-        self.chess_board.remove_piece(row_f, col_f)
-        self.chess_board.create_piece(type(self), self.colour, row_f, col_f)
