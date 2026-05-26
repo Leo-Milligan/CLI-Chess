@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
-class pawn:
-    def __init__(self, colour, chess_board) -> None:
-        self.colour = colour
-        self.piece_name = self.__class__.__name__
-        self.chess_board = chess_board
-        self.has_moved = False
+from Pieces import piece
+
+class pawn(piece):
 
     def move_piece(self, initial_position, final_position, take_piece_flag):
         if final_position == initial_position:
