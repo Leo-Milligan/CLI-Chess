@@ -61,6 +61,14 @@ class chess_board:
 
         self.board[row][col] = None
 
+    def move_piece(self, initial_position, final_position):
+
+        row_i, col_i = initial_position
+        row_f, col_f = final_position
+
+        self.board[row_f][col_f] = self.board[row_i][col_i]
+        self.remove_piece(row_i, col_i)
+
     def set_board(self):
 
         self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
@@ -133,7 +141,7 @@ class chess_board:
             print(string)
 
 grid = chess_board()
-grid.create_piece(queen, "white", 1,1)
+grid.create_piece(rook, "white", 1,1)
 grid.show_board()
-grid.board[1][1].move_piece([1,1],[5,2],False)
+grid.board[1][1].move_piece([1,1],[5,1],False)
 grid.show_board()

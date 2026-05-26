@@ -43,8 +43,7 @@ class pawn:
                 if answer == "n":
                     return "Move aborted."
 
-            self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
-            self.chess_board.remove_piece(row_i, col_i)
+            self.chess_board.move_piece(initial_position, final_position)
             self.has_moved = True
             return
 
@@ -72,7 +71,6 @@ class pawn:
             else:
                 return "Move obstructed."
 
-        self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
-        self.chess_board.remove_piece(row_i, col_i)
+        self.chess_board.move_piece(initial_position, final_position)
         self.has_moved = True
         return

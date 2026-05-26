@@ -44,8 +44,7 @@ class king:
                 return "Move obstructed."
 
         if not final_position_contents:
-            self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
-            self.chess_board.remove_piece(row_i, col_i)
+            self.chess_board.move_piece(initial_position, final_position)
             return
 
         if take_piece_flag == False:
@@ -58,5 +57,4 @@ class king:
             if answer == "n":
                 return "Move aborted."
 
-        self.chess_board.board[row_f][col_f] = self.chess_board.board[row_i][col_i]
-        self.chess_board.remove_piece(row_i, col_i)
+        self.chess_board.move_piece(initial_position, final_position)
