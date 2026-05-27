@@ -39,55 +39,74 @@ class chess_board:
         self.num_cols = num_cols
         self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
 
-    def create_piece(self, piece_type, colour, row, col):
-      
+    def check_position_exists(self, position):
+
+        row, col = position
+
+        if (row < 0) | (col < 0):
+            raise ValueError("The row number and column number must be greater than one.")
+        elif (row > self.num_rows - 1) | (col > self.num_cols - 1):
+            raise ValueError("The column or row selected exceeds the board size.")
+
+    def create_piece(self, piece_type, colour, position):
+
         if piece_type not in piece_types:
             raise NameError(f"That is not a valid piece type.")
         elif colour not in ("white", "black"):
             raise NameError("That is not a valid colour.")
-        elif (row < 0) | (col < 0):
-            raise ValueError("The row number and column number must be greater than one.")
-        elif (row > self.num_rows - 1) | (col > self.num_cols - 1):
-            raise NameError("The column or row selected exceeds the board size.")
 
+        self.check_position_exists(position)
+
+        row, col = position
         self.board[row][col] = piece_type(colour, self)
 
-    def remove_piece(self, row, col):
+    def remove_piece(self, position):
 
-        if (row < 0) | (col < 0):
-            raise ValueError("The row number and column number must be greater than one.")
-        elif (row > self.num_rows) | (col > self.num_cols):
-            raise NameError("The column or row selected exceeds the board size.")
+        self.check_position_exists(position)
 
+        row, col = position
         self.board[row][col] = None
+
+    def get_piece(self, position):
+
+        self.check_position_exists(position)
+
+        row, col = position
+        return self.board[row][col]
 
     def move_piece(self, initial_position, final_position):
 
-        row_i, col_i = initial_position
+        self.check_position_exists(initial_position)
+
+        self.check_position_exists(final_position)
+
         row_f, col_f = final_position
 
-        self.board[row_f][col_f] = self.board[row_i][col_i]
-        self.remove_piece(row_i, col_i)
+        self.board[row_f][col_f] = self.get_piece(initial_position)
+        self.remove_piece(initial_position)
+
+    def is_square_attacked(self, position, by_colour):
+        pass
 
     def set_board(self):
 
         self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
 
-        self.create_piece(king, "white", 0, 4)
+        self.create_piece(king, "white", [0, 4])
 
-        self.create_piece(queen, "white", 0, 3)
+        self.create_piece(queen, "white", [0, 3])
 
-        self.create_piece(rook, "white", 0, 0)
-        self.create_piece(rook, "white", 0, self.num_cols-1)
+        self.create_piece(rook, "white", [0, 0])
+        self.create_piece(rook, "white", [0, self.num_cols-1])
 
-        self.create_piece(bishop, "white", 0, 2)
-        self.create_piece(bishop, "white", 0, self.num_cols-3)
+        self.create_piece(bishop, "white", [0, 2])
+        self.create_piece(bishop, "white", [0, self.num_cols-3])
 
-        self.create_piece(knight, "white", 0, 1)
-        self.create_piece(knight, "white", 0, self.num_cols-2)
+        self.create_piece(knight, "white", [0, 1])
+        self.create_piece(knight, "white", [0, self.num_cols-2])
 
         for i in range(self.num_rows):
-            self.create_piece(pawn, "white", 1, i)
+            self.create_piece(pawn, "white", [1, i])
 
         self.mirror_board()
 
@@ -96,7 +115,7 @@ class chess_board:
         for col in range(self.num_cols):
             for row in range(self.num_rows):
 
-                cell_contents = self.board[col][row]
+                cell_contents = self.get_piece([row, col])
 
                 if  cell_contents == None:
                     continue
@@ -141,7 +160,9 @@ class chess_board:
             print(string)
 
 grid = chess_board()
-grid.create_piece(rook, "white", 1,1)
+grid.create_piece(pawn, "white", [1,1])
+print(grid.get_piece([1,1]).has_moved)
 grid.show_board()
-grid.board[1][1].move_piece([1,1],[5,1],False)
+grid.get_piece([1,1]).move_piece([1,1],[3,1],False)
+print(grid.get_piece([3,1]).has_moved)
 grid.show_board()

@@ -4,30 +4,19 @@ from Pieces import piece
 
 class pawn(piece):
 
-    def move_piece(self, initial_position, final_position, take_piece_flag):
-        if final_position == initial_position:
-            return "Final position is the same as initial position."
+    def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
 
         row_i, col_i = initial_position
         row_f, col_f = final_position
-
-        if any(dimension < 0 for dimension in (col_i, col_f, row_i, row_f)) | \
-        any(col > (self.chess_board.num_cols -1) for col in (col_i, col_f)) | \
-        any(row > (self.chess_board.num_rows -1) for row in (row_i, row_f)):
-            return "This is not a valid position on the board."
-
-        final_position_contents = self.chess_board.board[row_f][col_f]
-
-        if final_position_contents and final_position_contents.colour == self.colour:
-            return "Move obstructed."
 
         col_delta = col_f - col_i
         row_delta = row_f - row_i
 
         valid_diagonal_direction = (col_delta == 1 and abs(row_delta == 1))
+        final_position_contents = self.chess_board.get_piece(final_position)
 
         if valid_diagonal_direction and not final_position_contents:
-            return "Invalid move for this piece."
+            return False, "Invalid move for this piece."
 
         if valid_diagonal_direction and final_position_contents:
             if take_piece_flag == False:
@@ -38,36 +27,32 @@ class pawn(piece):
                         break
 
                 if answer == "n":
-                    return "Move aborted."
+                    return False, "Move aborted."
 
-            self.chess_board.move_piece(initial_position, final_position)
-            self.has_moved = True
-            return
+            return True, None
 
         if final_position_contents:
-            return "Move obstructed."
+            return False, "Move obstructed."
 
         if self.has_moved:
             if col_delta != 0 or row_delta != 1:
-                return "Invalid move for this piece."
+                return False, "Invalid move for this piece."
         elif not self.has_moved:
             if col_delta != 0 or row_delta > 2:
-                return "Invalid move for this piece."
+                return False, "Invalid move for this piece."
 
-        col_step = col_delta / abs(col_delta) if col_delta != 0 else 0
-        row_step = row_delta / abs(row_delta) if row_delta != 0 else 0
+        col_step = int(col_delta / abs(col_delta)) if col_delta != 0 else 0
+        row_step = int(row_delta / abs(row_delta)) if row_delta != 0 else 0
 
         intermediate_position = [row_i + row_step, col_i + col_step]
 
         while intermediate_position != final_position:
-            intermediate_position_contents = self.chess_board.board[int(intermediate_position[0])][int(intermediate_position[1])]
+            intermediate_position_contents = self.chess_board.get_piece(intermediate_position)
             if not intermediate_position_contents:
                 intermediate_position[0] += row_step
                 intermediate_position[1] += col_step
                 continue
             else:
-                return "Move obstructed."
+                return False, "Move obstructed."
 
-        self.chess_board.move_piece(initial_position, final_position)
-        self.has_moved = True
-        return
+        return True, None
