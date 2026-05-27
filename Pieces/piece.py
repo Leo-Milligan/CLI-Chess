@@ -51,6 +51,7 @@ class piece:
 
         pre_move_initial_position_contents.has_moved = True
 
+        self.chess_board.piece_positions.pop(tuple(initial_position), None)
         self.chess_board.piece_positions.pop(tuple(final_position), None)
         self.chess_board.piece_positions.update({tuple(final_position): pre_move_initial_position_contents})
 
