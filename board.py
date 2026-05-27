@@ -30,14 +30,20 @@ class chess_board:
 
         if not isinstance(num_rows, int) or not isinstance(num_cols, int):
             raise TypeError("The number of rows and number of columns must be integers.")
-        elif (num_rows <= 0) | (num_cols <= 0):
+        elif (num_rows <= 0) or (num_cols <= 0):
             raise ValueError("The number of rows and number of columns must be greater than one.")
-        elif (num_rows >= 16) | (num_cols >= 16):
+        elif (num_rows >= 16) or (num_cols >= 16):
             raise ValueError("The maximum number of rows and columns is 16.")
 
         self.num_rows = num_rows
         self.num_cols = num_cols
         self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
+
+        self.piece_positions = {"white": {},
+                                "black": {}
+                                }
+
+        self.king_positions = {}
 
     def check_position_exists(self, position):
 
@@ -59,6 +65,10 @@ class chess_board:
 
         row, col = position
         self.board[row][col] = piece_type(colour, self)
+
+        self.piece_positions[colour].update({(row, col): self.board[row][col]})
+        if piece_type == king:
+            self.king_positions.update({colour: position})
 
     def remove_piece(self, position):
 
@@ -86,7 +96,23 @@ class chess_board:
         self.remove_piece(initial_position)
 
     def is_square_attacked(self, position, by_colour):
-        pass
+
+        self.check_position_exists(position)
+
+        for cell in self.piece_positions[by_colour]:
+            cell_contents = self.piece_positions[by_colour][cell]
+            valid, _ = cell_contents.piece_specific_move_checks(list(cell), position, True)
+
+            if valid == True:
+                return True
+
+        return False
+
+    def king_in_check(self, colour):
+
+        opposite_colour = "black" if colour == "white" else "black"
+
+        return self.is_square_attacked(self.king_positions[colour], opposite_colour)
 
     def set_board(self):
 
@@ -160,9 +186,9 @@ class chess_board:
             print(string)
 
 grid = chess_board()
-grid.create_piece(pawn, "white", [1,1])
-print(grid.get_piece([1,1]).has_moved)
+grid.create_piece(rook, "white", [1,1])
+grid.create_piece(king, "white", [0,1])
+grid.create_piece(rook, "black", [4,1])
 grid.show_board()
-grid.get_piece([1,1]).move_piece([1,1],[3,1],False)
-print(grid.get_piece([3,1]).has_moved)
+grid.get_piece([1,1]).move_piece([1,1],[1,4],False)
 grid.show_board()

@@ -38,14 +38,24 @@ class piece:
 
         self.chess_board.move_piece(initial_position, final_position)
 
-        # own_king_in_check = self.chess_board.king_in_check(self.colour)
-        # if own_king_in_check:
-        #     print("Invalid move: defend your king!")
-        #     self.chess_board.board[initial_position] = pre_move_initial_position_contents
-        #     self.chess_board.board[final_position] = pre_move_final_position_contents
-        #     return
+        own_king_in_check = self.chess_board.king_in_check(self.colour)
+        if own_king_in_check:
+            print("Invalid move: defend your king!")
+
+            row_i, col_i = initial_position
+            row_f, col_f = final_position
+
+            self.chess_board.board[row_i][col_i] = pre_move_initial_position_contents
+            self.chess_board.board[row_f][col_f] = pre_move_final_position_contents
+            return
 
         pre_move_initial_position_contents.has_moved = True
 
-    def piece_specific_move_checks(self, initial_position, final_position):
+        self.chess_board.piece_positions.pop(tuple(final_position), None)
+        self.chess_board.piece_positions.update({tuple(final_position): pre_move_initial_position_contents})
+
+        if pre_move_initial_position_contents.name == "king":
+            self.chess_board.king_postions.update({pre_move_initial_position_contents.colour: tuple(initial_position)})
+
+    def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
         raise NotImplementedError("Override in Subclass")
