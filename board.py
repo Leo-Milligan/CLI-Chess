@@ -50,9 +50,11 @@ class chess_board:
         row, col = position
 
         if (row < 0) | (col < 0):
-            raise ValueError("The row number and column number must be greater than one.")
+            return (False, "The row number and column number must be greater than one.")
         elif (row > self.num_rows - 1) | (col > self.num_cols - 1):
-            raise ValueError("The column or row selected exceeds the board size.")
+            return (False, "The column or row selected exceeds the board size.")
+        else:
+            return (True, None)
 
     def create_piece(self, piece_type, colour, position):
 
@@ -61,58 +63,219 @@ class chess_board:
         elif colour not in ("white", "black"):
             raise NameError("That is not a valid colour.")
 
-        self.check_position_exists(position)
+        valid, error = self.check_position_exists(position)
+        if valid == False:
+            raise ValueError(error)
 
         row, col = position
         self.board[row][col] = piece_type(colour, self)
 
         self.piece_positions[colour].update({(row, col): self.board[row][col]})
         if piece_type == king:
-            self.king_positions.update({colour: position})
+            self.king_positions.update({colour: tuple(position)})
 
     def remove_piece(self, position):
 
-        self.check_position_exists(position)
+        valid, error = self.check_position_exists(position)
+        if valid == False:
+            raise ValueError(error)
+
+        position_contents = self.get_piece(position)
 
         row, col = position
         self.board[row][col] = None
 
+        if position_contents == None:
+            return
+
+        self.piece_positions[position_contents.colour].pop(tuple(position), None)
+
+        if position_contents.piece_name == "king":
+            self.king_positions.pop(position_contents.colour, None)
+
+    def insert_piece(self, piece, position):
+
+        valid, error = self.check_position_exists(position)
+        if valid == False:
+            raise ValueError(error)
+
+        if piece == None:
+            self.remove_piece(position)
+            return
+
+        if type(piece) not in piece_types:
+            raise NameError(f"That is not a valid piece type.")
+
+        row, col = position
+        self.board[row][col] = piece
+
+        self.piece_positions[piece.colour].update({tuple(position): piece})
+
+        if piece.piece_name == "king":
+            self.king_positions.update({piece.colour: tuple(position)})
+
     def get_piece(self, position):
 
-        self.check_position_exists(position)
+        valid, error = self.check_position_exists(position)
+        if valid == False:
+            raise ValueError(error)
 
         row, col = position
         return self.board[row][col]
 
     def move_piece(self, initial_position, final_position):
 
-        self.check_position_exists(initial_position)
+        valid, error = self.check_position_exists(initial_position)
+        if valid == False:
+            raise ValueError(error)
 
-        self.check_position_exists(final_position)
+        valid, error = self.check_position_exists(final_position)
+        if valid == False:
+            raise ValueError(error)
 
-        row_f, col_f = final_position
+        initial_position_contents = self.get_piece(initial_position)
 
-        self.board[row_f][col_f] = self.get_piece(initial_position)
         self.remove_piece(initial_position)
+        self.remove_piece(final_position)
+
+        self.insert_piece(initial_position_contents, final_position)
 
     def is_square_attacked(self, position, by_colour):
 
-        self.check_position_exists(position)
+        valid, error = self.check_position_exists(position)
+        if valid == False:
+            raise ValueError(error)
+
+        attacking_cells = []
 
         for cell in self.piece_positions[by_colour]:
             cell_contents = self.piece_positions[by_colour][cell]
-            valid, _ = cell_contents.piece_specific_move_checks(list(cell), position, True)
-
+            valid, _, _ = cell_contents.piece_specific_move_checks(list(cell), list(position), True)
             if valid == True:
-                return True
+                attacking_cells.append(cell)
 
-        return False
+        cell_is_attacked = True if attacking_cells else False
+        return (cell_is_attacked, attacking_cells)
 
     def king_in_check(self, colour):
 
-        opposite_colour = "black" if colour == "white" else "black"
+        opposite_colour = "black" if colour == "white" else "white"
+        cell_is_attacked, attacking_cells =  self.is_square_attacked(self.king_positions[colour], opposite_colour)
 
-        return self.is_square_attacked(self.king_positions[colour], opposite_colour)
+        return (cell_is_attacked, attacking_cells)
+
+    def king_in_checkmate(self, colour):
+
+        king_position = list(self.king_positions[colour])
+        opposite_colour = "black" if colour == "white" else "white"
+
+        cell_is_attacked, attacking_cells =  self.is_square_attacked(king_position, opposite_colour)
+        if not cell_is_attacked:
+            return False
+
+        king_row, king_col = king_position
+        possible_safe_positions = []
+
+        for delta_row in [-1, 0, 1]:
+            for delta_col in [-1, 0, 1]:
+
+                row = king_row + delta_row
+                col = king_col + delta_col
+                position = [row, col]
+
+                valid, _ = self.check_position_exists(position)
+                if not valid:
+                    continue
+
+                position_contents = self.get_piece(position)
+                if position_contents and position_contents.colour == colour:
+                    continue
+
+                possible_safe_positions.append(position)
+
+        for position in possible_safe_positions:
+            initial_position_contents = self.get_piece(king_position)
+            final_position_contents = self.get_piece(position)
+
+            self.move_piece(king_position, position)
+
+            king_in_check, _ = self.king_in_check(colour)
+
+            self.remove_piece(king_position)
+            self.remove_piece(position)
+
+            self.insert_piece(initial_position_contents, king_position)
+            self.insert_piece(final_position_contents, position)
+
+            if not king_in_check:
+                return False
+
+        total_intermediate_positions = []
+        for attacking_cell in attacking_cells:
+
+            attacking_cell_contents = self.get_piece(attacking_cell)
+
+            _, _, intermediate_position_list = attacking_cell_contents.piece_specific_move_checks(attacking_cell, king_position, True)
+
+            intermediate_position_list.append(list(attacking_cell))
+            for item in intermediate_position_list:
+                total_intermediate_positions.append(item)
+
+        for friendly_piece_position in list(self.piece_positions[colour]):
+
+            friendly_piece = self.get_piece(friendly_piece_position)
+
+            if friendly_piece.piece_name == "king":
+                continue
+
+            pinned_piece = self.is_piece_pinned(friendly_piece_position)
+            if pinned_piece:
+                continue
+
+            for position in total_intermediate_positions:
+
+                initial_position_contents = self.get_piece(friendly_piece_position)
+                final_position_contents = self.get_piece(position)
+
+                valid, _ = initial_position_contents.move_piece(friendly_piece_position, position, True)
+                if not valid:
+                    continue
+
+                king_in_check, _ = self.king_in_check(colour)
+
+                self.remove_piece(friendly_piece_position)
+                self.remove_piece(position)
+
+                self.insert_piece(initial_position_contents, friendly_piece_position)
+                self.insert_piece(final_position_contents, position)
+
+                if not king_in_check:
+                    return False
+
+        return True
+
+    def is_piece_pinned(self, position):
+
+        valid, error = self.check_position_exists(position)
+        if valid == False:
+            raise ValueError(error)
+
+        position_contents = self.get_piece(position)
+        if position_contents == None:
+            raise ValueError("There is no piece in this square.")
+
+        _, initial_attacking_cells = self.king_in_check(position_contents.colour)
+
+        self.remove_piece(position)
+
+        king_in_check, final_attacking_cells = self.king_in_check(position_contents.colour)
+
+        self.insert_piece(position_contents, position)
+
+        if king_in_check and len(final_attacking_cells) > len(initial_attacking_cells):
+            return True
+        else:
+            return False
 
     def set_board(self):
 
@@ -186,9 +349,16 @@ class chess_board:
             print(string)
 
 grid = chess_board()
-grid.create_piece(rook, "white", [1,1])
-grid.create_piece(king, "white", [0,1])
-grid.create_piece(rook, "black", [4,1])
+grid.create_piece(rook, "black", [4,0])
+grid.create_piece(king, "white", [0,0])
+grid.create_piece(rook, "white", [2,6])
+grid.create_piece(rook, "black", [4,4])
+grid.create_piece(king, "black", [5,5])
 grid.show_board()
-grid.get_piece([1,1]).move_piece([1,1],[1,4],False)
+
+valid, error = grid.get_piece([4,4]).move_piece([4,4],[4,1],False)
+check = grid.king_in_check("white")
+checkmate = grid.king_in_checkmate("white")
+print(check)
+print(checkmate)
 grid.show_board()
