@@ -160,6 +160,10 @@ class chess_board:
     def king_in_check(self, colour):
 
         opposite_colour = "black" if colour == "white" else "white"
+
+        if colour not in self.king_positions:
+            raise ValueError(f"Board does not conain a {colour} king.")
+
         cell_is_attacked, attacking_cells =  self.is_square_attacked(self.king_positions[colour], opposite_colour)
 
         return (cell_is_attacked, attacking_cells)
@@ -347,18 +351,3 @@ class chess_board:
                 string += "+---"
             string += "+"
             print(string)
-
-grid = chess_board()
-grid.create_piece(rook, "black", [4,0])
-grid.create_piece(king, "white", [0,0])
-grid.create_piece(rook, "white", [2,6])
-grid.create_piece(rook, "black", [4,4])
-grid.create_piece(king, "black", [5,5])
-grid.show_board()
-
-valid, error = grid.get_piece([4,4]).move_piece([4,4],[4,1],False)
-check = grid.king_in_check("white")
-checkmate = grid.king_in_checkmate("white")
-print(check)
-print(checkmate)
-grid.show_board()
