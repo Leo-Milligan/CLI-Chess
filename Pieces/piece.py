@@ -23,8 +23,6 @@ class piece:
 
     def move_piece(self, initial_position, final_position, take_piece_flag):
 
-        pre_move_initial_position_contents = self.chess_board.get_piece(initial_position)
-
         valid, error = self.generic_move_checks(initial_position, final_position)
         if valid is not True:
             return (False, error)
@@ -38,8 +36,6 @@ class piece:
             return(False, "Invalid move: piece is pinned.")
 
         self.chess_board.move_piece(initial_position, final_position)
-
-        pre_move_initial_position_contents.has_moved = True
 
         return (True, None)
 

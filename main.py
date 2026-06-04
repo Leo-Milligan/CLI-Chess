@@ -13,12 +13,31 @@ piece_mapping = {"K": king,
 class game:
     def __init__(self, chess_board) -> None:
         self.turn_colour = "white"
+        self.opposite_colour = "black"
         self.turn_number = 0
         self.captured_white_pieces = []
         self.captured_black_pieces = []
         self.history = []
         self.winner = None
         self.chess_board = chess_board
+
+    def game_loop(self):
+
+        self.chess_board.show_board()
+
+        while True:
+            initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece = self.get_move()
+
+            self.chess_board.move_piece(initial_position, final_position)
+
+            self.chess_board.show_board()
+
+            checkmate = self.chess_board.king_in_checkmate(self.opposite_colour)
+
+            if checkmate:
+                break
+
+            self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
 
     def get_move(self):
         while True:
@@ -58,7 +77,7 @@ class game:
                index = player_input.index("=")
 
                if index != len(player_input) -1:
-                   print("A piece to promote to must be specified after an = symbol.")
+                   print("A piece to promote to must be specified after a = symbol.")
                    continue
 
                promotional_piece = player_input[-1]
@@ -158,7 +177,7 @@ class game:
             if remaining_digits:
                 initial_row = int(digits_string) - 1
 
-            initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position)
+            initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position, take_piece_flag)
 
             if not initial_position:
                 if error:
@@ -169,9 +188,10 @@ class game:
 
         return (initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece)
 
-    def find_initial_position(self, piece_type_to_move, initial_row, initial_col, final_position):
+    def find_initial_position(self, piece_type_to_move, initial_row, initial_col, final_position, take_piece_flag):
 
         possible_positions = []
+        # gets possible positions, taking into account any hints given to remove ambiguity
         for key in self.chess_board.piece_positions[self.turn_colour]:
 
             if initial_row and key[0] != initial_row:
@@ -187,6 +207,7 @@ class game:
         if len(possible_positions) == 0:
             return (None, f"There are no {self.turn_colour} {piece_type_to_move.__name__}s on the board.")
 
+        # tests each possible piece
         for i in possible_positions:
             if i == final_position:
                 possible_positions.remove(i)
@@ -194,10 +215,10 @@ class game:
         if len(possible_positions) == 0:
             return (None, "Final position equals intial position")
 
-        for i in possible_positions:
+        for i in possible_positions.copy():
             cell_contents = self.chess_board.piece_positions[self.turn_colour][tuple(i)]
 
-            valid, _, _ = cell_contents.piece_specific_move_checks(i, final_position, True)
+            valid, _, _ = cell_contents.piece_specific_move_checks(i, final_position, take_piece_flag)
 
             if not valid:
                 possible_positions.remove(i)
@@ -215,10 +236,16 @@ class game:
         if len(possible_positions) == 1:
             return (possible_positions[0], None)
 
-        prompt = f"Move is ambiguous. Do you mean the {piece_type_to_move.name} at {possible_positions[0]} (0)"
+        # if there are still more than one possible piece, we ask the user to remove the ambiguity
+        possible_positions_chess_notation = []
+        for position in possible_positions:
+            position_chess_notation = self.coordinate_to_chess_notation(position)
+            possible_positions_chess_notation.append(position_chess_notation)
 
-        for i in possible_positions[0:]:
-            string_snippet = f" or at {possible_positions[i]} (i)"
+        prompt = f"Move is ambiguous. Do you mean the {piece_type_to_move.__name__} at {possible_positions_chess_notation[0]} (0)"
+
+        for i in range(len(possible_positions[1:])):
+            string_snippet = f" or at {possible_positions_chess_notation[i + 1]} ({i + 1})"
             prompt += string_snippet
 
         prompt += " or press (q) to re-enter move: "
@@ -237,14 +264,18 @@ class game:
 
         return (possible_positions[user_choice], None)
 
+    def coordinate_to_chess_notation(self, positon):
+
+        row, col = positon
+
+        row = row + 1
+        col = chr(col + 97)
+
+        position = str(col) + str(row)
+
+        return position
+
 chess_board = chess_board()
-chess_board.create_piece(rook, "white", [2,4])
-chess_board.create_piece(king, "white", [4,4])
-chess_board.create_piece(king, "black", [6,6])
-chess_board.show_board()
-game_loop = game(chess_board)
-initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece = game_loop.get_move()
-print(initial_position)
-print(final_position)
-print(take_piece_flag)
-print(piece_type_to_move)
+chess_board.set_board()
+chess_game = game(chess_board)
+chess_game.game_loop()

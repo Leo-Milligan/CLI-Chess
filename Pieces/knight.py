@@ -4,7 +4,7 @@ from Pieces import piece
 
 class knight(piece):
 
-    def piece_specfic_move_checks(self, initial_position, final_position, take_piece_flag):
+    def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
 
         intermediate_position_list = []
 

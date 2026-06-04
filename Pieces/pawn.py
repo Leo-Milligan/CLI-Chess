@@ -14,8 +14,15 @@ class pawn(piece):
         col_delta = col_f - col_i
         row_delta = row_f - row_i
 
-        valid_diagonal_direction = (col_delta == 1 and abs(row_delta == 1))
+        initial_position_contents = self.chess_board.get_piece(initial_position)
         final_position_contents = self.chess_board.get_piece(final_position)
+
+        if initial_position_contents.colour == "black":
+            corrected_row_delta = -row_delta
+        else:
+            corrected_row_delta = row_delta
+
+        valid_diagonal_direction = (abs(col_delta) == 1) and (corrected_row_delta == 1)
 
         if valid_diagonal_direction and not final_position_contents:
             return (False, "Invalid move for this piece.", intermediate_position_list)
@@ -37,10 +44,10 @@ class pawn(piece):
             return (False, "Move obstructed.", intermediate_position_list)
 
         if self.has_moved:
-            if col_delta != 0 or row_delta != 1:
+            if col_delta != 0 or corrected_row_delta != 1:
                 return (False, "Invalid move for this piece.", intermediate_position_list)
         elif not self.has_moved:
-            if col_delta != 0 or row_delta > 2:
+            if col_delta != 0 or corrected_row_delta > 2:
                 return (False, "Invalid move for this piece.", intermediate_position_list)
 
         col_step = int(col_delta / abs(col_delta)) if col_delta != 0 else 0

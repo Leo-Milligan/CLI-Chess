@@ -139,6 +139,7 @@ class chess_board:
         self.remove_piece(final_position)
 
         self.insert_piece(initial_position_contents, final_position)
+        initial_position_contents.has_moved = True
 
     def is_square_attacked(self, position, by_colour):
 
@@ -237,8 +238,6 @@ class chess_board:
                 continue
 
             for position in total_intermediate_positions:
-
-                initial_position_contents = self.get_piece(friendly_piece_position)
                 final_position_contents = self.get_piece(position)
 
                 valid, _ = initial_position_contents.move_piece(friendly_piece_position, position, True)
@@ -267,6 +266,9 @@ class chess_board:
         position_contents = self.get_piece(position)
         if position_contents == None:
             raise ValueError("There is no piece in this square.")
+
+        if type(position_contents) == king:
+            return False
 
         _, initial_attacking_cells = self.king_in_check(position_contents.colour)
 
@@ -316,8 +318,8 @@ class chess_board:
                 piece_type = type(cell_contents)
                 colour = cell_contents.colour
 
-                if (colour == "white") & piece_type in piece_types:
-                    self.create_piece(piece_type, "black", self.num_cols-col-1, row)
+                if colour == "white" and piece_type in piece_types:
+                    self.create_piece(piece_type, "black", [self.num_rows - row -1 , col])
 
     def show_board(self):
 
