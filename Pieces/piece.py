@@ -21,7 +21,7 @@ class piece:
 
         return (True, None)
 
-    def move_piece(self, initial_position, final_position, take_piece_flag):
+    def check_move_validity(self, initial_position, final_position, take_piece_flag):
 
         valid, error = self.generic_move_checks(initial_position, final_position)
         if valid is not True:
@@ -35,9 +35,8 @@ class piece:
         if pinned_piece:
             return(False, "Invalid move: piece is pinned.")
 
-        self.chess_board.move_piece(initial_position, final_position)
-
         return (True, None)
+
 
     def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
         raise NotImplementedError("Override in Subclass")
