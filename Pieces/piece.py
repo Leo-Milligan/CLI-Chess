@@ -35,6 +35,25 @@ class piece:
         if pinned_piece:
             return(False, "Invalid move: piece is pinned.")
 
+        initial_position_contents = self.chess_board.get_piece(initial_position)
+        final_position_contents = self.chess_board.get_piece(final_position)
+
+        own_king_in_check, _ = self.chess_board.king_in_check(initial_position_contents.colour)
+        if own_king_in_check:
+
+            self.chess_board.move_piece(initial_position, final_position)
+
+            king_in_check, _ = self.chess_board.king_in_check(initial_position_contents.colour)
+
+            self.chess_board.remove_piece(initial_position)
+            self.chess_board.remove_piece(final_position)
+
+            self.chess_board.insert_piece(initial_position_contents, initial_position)
+            self.chess_board.insert_piece(final_position_contents, final_position)
+
+            if king_in_check:
+                return (False, "Invalid move: defend your king!")
+
         return (True, None)
 
 

@@ -198,6 +198,7 @@ class chess_board:
 
                 possible_safe_positions.append(position)
 
+
         for position in possible_safe_positions:
             initial_position_contents = self.get_piece(king_position)
             final_position_contents = self.get_piece(position)
@@ -238,11 +239,14 @@ class chess_board:
                 continue
 
             for position in total_intermediate_positions:
+                initial_position_contents = self.get_piece(friendly_piece_position)
                 final_position_contents = self.get_piece(position)
 
-                valid, _ = initial_position_contents.move_piece(friendly_piece_position, position, True)
+                valid, _ = initial_position_contents.check_move_validity(friendly_piece_position, position, True)
                 if not valid:
                     continue
+
+                self.move_piece(friendly_piece_position, position)
 
                 king_in_check, _ = self.king_in_check(colour)
 

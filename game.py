@@ -32,7 +32,13 @@ class game:
 
             self.chess_board.show_board()
 
-            checkmate = self.chess_board.king_in_checkmate(self.opposite_colour)
+            check, _ = self.chess_board.king_in_check(self.opposite_colour)
+
+            if check:
+                print(f"{self.opposite_colour} king in check!")
+                checkmate = self.chess_board.king_in_checkmate(self.opposite_colour)
+            else:
+                checkmate = False
 
             if checkmate:
                 break
@@ -40,6 +46,7 @@ class game:
             self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
 
     def get_move(self):
+
         while True:
             player_input = list(input("Enter move: ").strip(" +#!?"))
 
@@ -51,12 +58,12 @@ class game:
             if castling_flag:
                 break
 
-            promotional_piece, remainder, error = self.retrieve_promotional_piece(player_input)
+            promotional_piece, remainder, error = self.get_promotional_piece(player_input)
             if error:
                 print(error)
                 continue
 
-            take_piece_flag, remainder = self.retrieve_take_piece_flag(remainder)
+            take_piece_flag, remainder = self.get_take_piece_flag(remainder)
 
             final_position, remainder, error = self.find_final_position(remainder)
             if not final_position:
@@ -65,14 +72,15 @@ class game:
 
             piece_type_to_move, remainder = self.get_piece_type_from_input(remainder)
 
-            initial_row, initial_col, error = self.retrieve_ambiguity_clues(remainder)
+            initial_row, initial_col, error = self.get_ambiguity_clues(remainder)
             if error:
                 print(error)
                 continue
 
             initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position, take_piece_flag)
-            if error:
-                print(error)
+            if not initial_position:
+                if error:
+                    print(error)
                 continue
 
             break
@@ -99,7 +107,7 @@ class game:
 
         for i in possible_positions.copy():
 
-            cell_contents = self.chess_board.piece_positions[self.turn_colour][tuple(i)]
+            cell_contents = self.chess_board.get_piece(i)
 
             valid, _ = cell_contents.check_move_validity(i, final_position, take_piece_flag)
 
@@ -107,12 +115,14 @@ class game:
                 possible_positions.remove(i)
 
         if len(possible_positions) == 0:
-            return (None, f"No {self.turn_colour} {piece_type_to_move.__name__}s can make this move")
+            return (None, f"No {self.turn_colour} {piece_type_to_move.__name__}s can make this move.")
 
         if len(possible_positions) == 1:
             return (possible_positions[0], None)
 
-        initial_position = self.remove_piece_ambiguity(self, possible_positions, piece_type_to_move)
+        initial_position = self.remove_piece_ambiguity(possible_positions, piece_type_to_move)
+        if initial_position == None:
+            return (None, None)
 
         return (initial_position, None)
 
@@ -141,7 +151,7 @@ class game:
                     break
 
         if user_choice == "q":
-            return (None, None)
+            return None
 
         initial_position = possible_initial_positions[user_choice]
 
@@ -160,29 +170,49 @@ class game:
 
     def find_final_position(self, player_input):
 
-        second_last_character = player_input[-2]
+        digits = []
+        characters = []
 
-        if second_last_character.isdigit():
-            final_position = player_input[-3:]
-            final_position[-2] = final_position[-2] + final_position[-1]
-            del final_position[-1]
+        if player_input[-2].isdigit():
+
+            if len(player_input) < 3:
+                return (None, player_input, "Invalid final position.")
+
+            digits.append(player_input[-2])
+
+            if not player_input[-1].isdigit():
+                return (None, player_input, "Invalid final position.")
+
+            digits.append(player_input[-1])
+
+            if not player_input[-3].isalpha():
+                return (None, player_input, "Invalid final position.")
+
+            characters.append(player_input[-3])
+
             player_input = player_input[:-3]
-        else:
-            final_position = player_input[-2:]
+
+        elif player_input[-2].isalpha():
+            characters.append(player_input[-2])
+
+            if not player_input[-1].isdigit():
+                return (None, player_input, "Invalid final position.")
+
+            digits.append(player_input[-1])
+
             player_input = player_input[:-2]
-
-        # chess notation goes (col,row) while board indexing gose (row,col)
-        final_position.reverse()
-
-        if final_position[1].isalpha():
-            final_position[1] = ord(final_position[1]) - 97
         else:
             return (None, player_input, "Invalid final position.")
 
-        if final_position[0].isdigit():
-            final_position[0] = int(final_position[0]) - 1
-        else:
-            return (None, player_input, "Invalid final position.")
+        final_col = ord(characters[0]) - 97
+
+        digits_string = ""
+        for i in digits:
+            digits_string += i
+
+        final_row = int(digits_string) - 1
+
+        final_position = [final_row, final_col]
 
         valid, error = self.chess_board.check_position_exists(final_position)
         if not valid:
@@ -192,49 +222,55 @@ class game:
 
     def get_piece_type_from_input(self, player_input):
 
-        try:
-            possible_piece = player_input[0]
-            del player_input[0]
-        except:
-            possible_piece = "P"
+        possible_piece = None
 
-        if possible_piece in piece_mapping:
+        if player_input:
+            possible_piece = player_input[0]
+
+        if possible_piece and possible_piece in piece_mapping:
+            del player_input[0]
             piece_type_to_move = piece_mapping[possible_piece]
         else:
             piece_type_to_move = pawn
 
         return (piece_type_to_move, player_input)
 
-    def retrieve_ambiguity_clues(self, player_input):
+    def get_ambiguity_clues(self, player_input):
 
         initial_row = None
         initial_col = None
 
-        remaining_digits = []
-        remaining_characters = []
+        digits = []
+        characters = []
 
         for i in player_input:
             if i.isdigit():
-                remaining_digits.append(i)
+                digits.append(i)
             if i.isalpha():
-                remaining_characters.append(i)
+                characters.append(i)
 
-        if len(remaining_characters) > 1:
+        if len(characters) > 1:
             return (None, None, "Invalid initial position")
 
         digits_string = ""
-        for i in remaining_digits:
+        for i in digits:
             digits_string += i
 
-        if len(remaining_characters) == 1:
-            initial_col = ord(remaining_characters[0]) - 97
+        if len(characters) == 1:
+            initial_col = ord(characters[0]) - 97
 
-        if remaining_digits:
+            if 0 > initial_col > self.chess_board.num_cols:
+                initial_col = None
+
+        if digits:
             initial_row = int(digits_string) - 1
+
+            if 0 > initial_row > self.chess_board.num_cols:
+                initial_col = None
 
         return (initial_row, initial_col, None)
 
-    def retrieve_promotional_piece(self, player_input):
+    def get_promotional_piece(self, player_input):
 
         if "=" in player_input:
             index = player_input.index("=")
@@ -258,7 +294,7 @@ class game:
         return (None, player_input, None)
 
 
-    def retrieve_take_piece_flag(self, player_input):
+    def get_take_piece_flag(self, player_input):
 
         if "x" in player_input:
             take_piece_flag = True

@@ -29,14 +29,7 @@ class pawn(piece):
 
         if valid_diagonal_direction and final_position_contents:
             if take_piece_flag == False:
-
-                while True:
-                    answer = input("Would you like to take the piece? (y/n) ").lower()
-                    if answer in ("y", "n"):
-                        break
-
-                if answer == "n":
-                    return (False, "Move aborted.", intermediate_position_list)
+                return (False, "Move obstructed (hint: include 'x' to take a piece).", intermediate_position_list)
 
             return (True, None, intermediate_position_list)
 
