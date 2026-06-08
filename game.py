@@ -28,7 +28,10 @@ class game:
         while True:
             initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag = self.get_move()
 
-            self.chess_board.move_piece(initial_position, final_position)
+            if piece_type_to_move == pawn and promotional_piece:
+                self.chess_board.move_piece_with_promotion(initial_position, final_position, promotional_piece)
+            else:
+                self.chess_board.move_piece(initial_position, final_position)
 
             self.chess_board.show_board()
 
@@ -77,17 +80,21 @@ class game:
                 print(error)
                 continue
 
-            initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position, take_piece_flag)
+            initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position)
             if not initial_position:
                 if error:
                     print(error)
+                continue
+
+            take_piece_flag, promotional_piece, abort_move = self.confirm_user_preferences(final_position, take_piece_flag, piece_type_to_move, promotional_piece)
+            if abort_move == True:
                 continue
 
             break
 
         return (initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag)
 
-    def find_initial_position(self, piece_type_to_move, initial_row, initial_col, final_position, take_piece_flag):
+    def find_initial_position(self, piece_type_to_move, initial_row, initial_col, final_position):
 
         possible_positions = []
         for key in self.chess_board.piece_positions[self.turn_colour]:
@@ -109,7 +116,7 @@ class game:
 
             cell_contents = self.chess_board.get_piece(i)
 
-            valid, _ = cell_contents.check_move_validity(i, final_position, take_piece_flag)
+            valid, _ = cell_contents.check_move_validity(i, final_position, True)
 
             if valid == False:
                 possible_positions.remove(i)
@@ -139,11 +146,11 @@ class game:
             string_snippet = f" or at {possible_positions_chess_notation[i + 1]} ({i + 1})"
             prompt += string_snippet
 
-        prompt += " or press (q) to re-enter move: "
+        prompt += " or press (x) to re-enter move: "
 
         while True:
             user_choice = input(prompt).strip().lower()
-            if user_choice == "q":
+            if user_choice == "x":
                 break
             if user_choice.isdigit():
                 user_choice = int(user_choice)
@@ -275,15 +282,15 @@ class game:
         if "=" in player_input:
             index = player_input.index("=")
 
-            if index != len(player_input) -1:
-                return (None, player_input, "A piece to promote to must be specified after a = symbol.")
+            if (index + 1) == len(player_input):
+                return (None, player_input, "A piece to promote to must be specified after the '=' symbol.")
 
-            promotional_piece = player_input[-1]
+            promotional_piece = player_input[index + 1]
 
             keys = list(piece_mapping.keys())
-            keys_excluding_pawn = keys[:-1]
+            keys_excluding_pawn_and_king = [k for k in keys if k not in ("K", "P")]
 
-            if promotional_piece in keys_excluding_pawn:
+            if promotional_piece in keys_excluding_pawn_and_king:
                 promotional_piece = piece_mapping[promotional_piece]
                 player_input = player_input[:-2]
 
@@ -337,6 +344,68 @@ class game:
             return(initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag)
 
         return (None, None, None, None, None, None)
+
+    def confirm_user_preferences(self, final_position, take_piece_flag, piece_type_to_move, promotional_piece):
+
+        abort_move = False
+
+        final_position_contents = self.chess_board.get_piece(final_position)
+
+        if final_position_contents and final_position_contents != self.turn_colour and take_piece_flag == False:
+            while True:
+                answer = input("Do you want to take the piece (y/n): ").lower().strip()
+
+                if answer == "y":
+                    take_piece_flag = True
+                    break
+                if answer == "n":
+                    abort_move = True
+                    break
+
+        if not final_position_contents and take_piece_flag == True:
+            while True:
+                answer = input("The destination square is empty, do you want to continue (y/n): ").lower().strip()
+
+                if answer == "y":
+                    take_piece_flag = False
+                    break
+                if answer == "n":
+                    abort_move = True
+                    break
+
+        if self.turn_colour == "white":
+            moving_to_last_row = True if final_position[0] == (self.chess_board.num_rows - 1) else False
+        else:
+            moving_to_last_row = True if final_position[0] == 0 else False
+
+        if promotional_piece and (not moving_to_last_row or not piece_type_to_move == pawn):
+            promotional_piece = None
+
+            while True:
+                answer = input("Promoting this piece is not possible, do you want to continue (y/n): ").lower().strip()
+
+                if answer == "y":
+                    break
+                if answer == "n":
+                    abort_move = True
+                    break
+
+        keys = list(piece_mapping.keys())
+        keys_excluding_pawn_and_king = [k for k in keys if k not in ("K", "P")]
+
+        if piece_type_to_move == pawn and moving_to_last_row and not promotional_piece:
+
+            while True:
+                answer = input("Promote to Queen (Q), Rook (R), Bishop (B), Knight (N), or press (x) to re-enter move: ").upper().strip()
+
+                if answer in keys_excluding_pawn_and_king:
+                    promotional_piece = piece_mapping[answer]
+                    break
+                if answer == "X":
+                    abort_move = True
+                    break
+
+        return (take_piece_flag, promotional_piece, abort_move)
 
 chess_board = chess_board()
 chess_board.set_board()

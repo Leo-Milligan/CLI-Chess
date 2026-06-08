@@ -141,6 +141,26 @@ class chess_board:
         self.insert_piece(initial_position_contents, final_position)
         initial_position_contents.has_moved = True
 
+    def move_piece_with_promotion(self, initial_position, final_position, promotional_piece):
+
+        valid, error = self.check_position_exists(initial_position)
+        if valid == False:
+            raise ValueError(error)
+
+        valid, error = self.check_position_exists(final_position)
+        if valid == False:
+            raise ValueError(error)
+
+        initial_position_contents = self.get_piece(initial_position)
+
+        self.remove_piece(initial_position)
+        self.remove_piece(final_position)
+
+        self.create_piece(promotional_piece, initial_position_contents.colour, final_position)
+
+        promotional_piece = self.get_piece(final_position)
+        promotional_piece.has_moved = True
+
     def is_square_attacked(self, position, by_colour):
 
         valid, error = self.check_position_exists(position)
