@@ -141,6 +141,11 @@ class chess_board:
         self.insert_piece(initial_position_contents, final_position)
         initial_position_contents.has_moved = True
 
+        row_delta = final_position[0] - initial_position[0]
+
+        if type(initial_position_contents) == pawn and abs(row_delta) == 2:
+            initial_position_contents.en_passant_vulnerable_flag = True
+
     def move_piece_with_promotion(self, initial_position, final_position, promotional_piece):
 
         valid, error = self.check_position_exists(initial_position)
@@ -160,6 +165,27 @@ class chess_board:
 
         promotional_piece = self.get_piece(final_position)
         promotional_piece.has_moved = True
+
+    def move_piece_with_en_passant(self, initial_position, final_position):
+
+        valid, error = self.check_position_exists(initial_position)
+        if valid == False:
+            raise ValueError(error)
+
+        valid, error = self.check_position_exists(final_position)
+        if valid == False:
+            raise ValueError(error)
+
+        initial_position_contents = self.get_piece(initial_position)
+
+        col_delta = final_position[1] - initial_position[1]
+        adjacent_position = [initial_position[0], initial_position[1] + col_delta]
+
+        self.remove_piece(initial_position)
+        self.remove_piece(adjacent_position)
+
+        self.insert_piece(initial_position_contents, final_position)
+        initial_position_contents.has_moved = True
 
     def is_square_attacked(self, position, by_colour):
 

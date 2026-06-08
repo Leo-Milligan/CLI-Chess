@@ -4,6 +4,10 @@ from Pieces import piece
 
 class pawn(piece):
 
+    def __init__(self, colour, chess_board) -> None:
+        super().__init__(colour, chess_board)
+        self.en_passant_vulnerable_flag = False
+
     def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
 
         intermediate_position_list = []
@@ -25,7 +29,13 @@ class pawn(piece):
         valid_diagonal_direction = (abs(col_delta) == 1) and (corrected_row_delta == 1)
 
         if valid_diagonal_direction and not final_position_contents:
-            return (False, "Invalid move for this piece.", intermediate_position_list)
+
+            en_passant_flag = self.get_en_passant_flag(initial_position, final_position, take_piece_flag)
+
+            if en_passant_flag == False:
+                return (False, "Invalid move for this piece.", intermediate_position_list)
+            else:
+                return (True, None, intermediate_position_list)
 
         if valid_diagonal_direction and final_position_contents:
             if take_piece_flag == False:
@@ -59,3 +69,42 @@ class pawn(piece):
                 return (False, "Move obstructed.", intermediate_position_list)
 
         return (True, None, intermediate_position_list)
+
+    def get_en_passant_flag(self, initial_position, final_position, take_piece_flag):
+
+        if take_piece_flag == False:
+            return False
+
+        row_i, col_i = initial_position
+        row_f, col_f = final_position
+
+        col_delta = col_f - col_i
+        row_delta = row_f - row_i
+
+        initial_position_contents = self.chess_board.get_piece(initial_position)
+        final_position_contents = self.chess_board.get_piece(final_position)
+
+        if initial_position_contents.colour == "black":
+            corrected_row_delta = -row_delta
+        else:
+            corrected_row_delta = row_delta
+
+        valid_diagonal_direction = (abs(col_delta) == 1) and (corrected_row_delta == 1)
+
+        if not valid_diagonal_direction or final_position_contents:
+            return False
+
+        adjacent_position = [initial_position[0], initial_position[1] + col_delta]
+
+        valid, _ = self.chess_board.check_position_exists(adjacent_position)
+        if not valid:
+            return False
+
+        cell_contents = self.chess_board.get_piece(adjacent_position)
+
+        if type(cell_contents) != pawn:
+            return False
+        elif cell_contents.en_passant_vulnerable_flag != True:
+            return False
+        else:
+            return True

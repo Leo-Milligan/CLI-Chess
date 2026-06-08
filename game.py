@@ -17,7 +17,7 @@ class game:
         self.turn_number = 0
         self.captured_white_pieces = []
         self.captured_black_pieces = []
-        self.history = []
+        self.move_history = []
         self.winner = None
         self.chess_board = chess_board
 
@@ -26,10 +26,12 @@ class game:
         self.chess_board.show_board()
 
         while True:
-            initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag = self.get_move()
+            initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag = self.get_move()
 
             if piece_type_to_move == pawn and promotional_piece:
                 self.chess_board.move_piece_with_promotion(initial_position, final_position, promotional_piece)
+            if piece_type_to_move == pawn and en_passant_flag:
+                self.chess_board.move_piece_with_en_passant(initial_position, final_position)
             else:
                 self.chess_board.move_piece(initial_position, final_position)
 
@@ -46,6 +48,10 @@ class game:
             if checkmate:
                 break
 
+            for piece in self.chess_board.piece_positions[self.opposite_colour]:
+                if type(piece) == pawn:
+                    piece.en_passant_vulnerable_flag = False
+
             self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
 
     def get_move(self):
@@ -57,7 +63,7 @@ class game:
                 print("Move patterns must be at least two characters long.")
                 continue
 
-            initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag = self.is_castling(player_input)
+            initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag = self.is_castling(player_input)
             if castling_flag:
                 break
 
@@ -86,13 +92,19 @@ class game:
                     print(error)
                 continue
 
-            take_piece_flag, promotional_piece, abort_move = self.confirm_user_preferences(final_position, take_piece_flag, piece_type_to_move, promotional_piece)
+            if piece_type_to_move == pawn:
+                initial_position_contents = self.chess_board.get_piece(initial_position)
+                en_passant_flag = initial_position_contents.get_en_passant_flag(initial_position, final_position, True)
+            else:
+                en_passant_flag = False
+
+            take_piece_flag, promotional_piece, abort_move = self.confirm_user_preferences(final_position, take_piece_flag, piece_type_to_move, promotional_piece, en_passant_flag)
             if abort_move == True:
                 continue
 
             break
 
-        return (initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag)
+        return (initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag)
 
     def find_initial_position(self, piece_type_to_move, initial_row, initial_col, final_position):
 
@@ -157,7 +169,7 @@ class game:
                 if 0 <= user_choice <= (len(possible_initial_positions) - 1):
                     break
 
-        if user_choice == "q":
+        if user_choice == "x":
             return None
 
         initial_position = possible_initial_positions[user_choice]
@@ -329,8 +341,9 @@ class game:
             take_piece_flag = False
             promotional_piece = False
             piece_type_to_move = king
+            en_passant_flag =False
 
-            return(initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag)
+            return(initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag)
 
         elif player_input_lower == queenside_castling:
 
@@ -340,12 +353,13 @@ class game:
             take_piece_flag = False
             promotional_piece = False
             piece_type_to_move = king
+            en_passant_flag =False
 
-            return(initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag)
+            return(initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag)
 
-        return (None, None, None, None, None, None)
+        return (None, None, None, None, None, None, None)
 
-    def confirm_user_preferences(self, final_position, take_piece_flag, piece_type_to_move, promotional_piece):
+    def confirm_user_preferences(self, final_position, take_piece_flag, piece_type_to_move, promotional_piece, en_passant_flag):
 
         abort_move = False
 
@@ -362,7 +376,18 @@ class game:
                     abort_move = True
                     break
 
-        if not final_position_contents and take_piece_flag == True:
+        if en_passant_flag == True and take_piece_flag == False:
+            while True:
+                answer = input("Do you want to capture en passant (y/n): ").lower().strip()
+
+                if answer == "y":
+                    take_piece_flag = True
+                    break
+                if answer == "n":
+                    abort_move = True
+                    break
+
+        if not final_position_contents and take_piece_flag == True and en_passant_flag == False:
             while True:
                 answer = input("The destination square is empty, do you want to continue (y/n): ").lower().strip()
 
