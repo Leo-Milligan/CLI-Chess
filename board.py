@@ -187,6 +187,32 @@ class chess_board:
         self.insert_piece(initial_position_contents, final_position)
         initial_position_contents.has_moved = True
 
+    def check_castle_validity(self, initial_position, final_position):
+
+        valid, error = self.check_position_exists(initial_position)
+        if valid == False:
+            raise ValueError(error)
+
+        valid, error = self.check_position_exists(final_position)
+        if valid == False:
+            raise ValueError(error)
+
+        initial_position_contents = self.get_piece(initial_position)
+        #check contents is a king
+
+        # check if king and rook both first moves
+        # rook at least 3 squares away
+        # here check if its empty between king and relevant rook
+            # if kingside
+            # if queenside
+        pass
+
+    def move_piece_with_castle(self, initial_position, final_position):
+        # here actually move both pieces
+        # if kingside change row by -2
+        # if queenside change row by +2
+        pass
+
     def is_square_attacked(self, position, by_colour):
 
         valid, error = self.check_position_exists(position)

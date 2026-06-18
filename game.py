@@ -344,6 +344,9 @@ class game:
 
         player_input_lower = [i.lower for i in player_input]
 
+        # rework flag to add check for king or queen
+        # then check castling validity
+
         if player_input_lower == kingside_castling:
             castling_flag = True
             return castling_flag, None
