@@ -4,7 +4,7 @@ from Pieces import piece
 
 class pawn(piece):
 
-    def __init__(self, colour, chess_board) -> None:
+    def __init__(self, colour, chess_board):
         super().__init__(colour, chess_board)
         self.en_passant_vulnerable_flag = False
 

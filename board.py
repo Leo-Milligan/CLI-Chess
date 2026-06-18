@@ -26,7 +26,7 @@ piece_symbols = {"white": {"king": "♔",
                  }
 
 class chess_board:
-    def __init__(self, num_rows = 8, num_cols = 8) -> None:
+    def __init__(self, num_rows = 8, num_cols = 8):
 
         if not isinstance(num_rows, int) or not isinstance(num_cols, int):
             raise TypeError("The number of rows and number of columns must be integers.")

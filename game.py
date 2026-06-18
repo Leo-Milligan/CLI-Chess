@@ -11,10 +11,10 @@ piece_mapping = {"K": king,
                  "P": pawn}
 
 class game:
-    def __init__(self, chess_board) -> None:
+    def __init__(self, chess_board):
         self.turn_colour = "white"
         self.opposite_colour = "black"
-        self.turn_number = 0
+        self.move_number = 0
         self.captured_white_pieces = []
         self.captured_black_pieces = []
         self.move_history = []
@@ -26,16 +26,32 @@ class game:
         self.chess_board.show_board()
 
         while True:
-            initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag = self.get_move()
+            while True:
+                player_input = list(input("Enter move: ").strip(" +#!?"))
 
-            if piece_type_to_move == pawn and promotional_piece:
-                self.chess_board.move_piece_with_promotion(initial_position, final_position, promotional_piece)
-            if piece_type_to_move == pawn and en_passant_flag:
-                self.chess_board.move_piece_with_en_passant(initial_position, final_position)
+                move_information = self.interperet_notation(player_input)
+
+                if not move_information["valid"]:
+                    if move_information["error"]:
+                        print(move_information["error"])
+                    continue
+                break
+
+            if move_information["castling_flag"]:
+                # store move delta
+                print("This is where we should call the castle move function")
+            elif move_information["piece_type_to_move"] == pawn and move_information["promotional_piece"]:
+                # store move delta
+                self.chess_board.move_piece_with_promotion( move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"])
+            elif move_information["piece_type_to_move"] == pawn and move_information["en_passant_flag"]:
+                # store move delta
+                self.chess_board.move_piece_with_en_passant(move_information["initial_position"], move_information["final_position"])
             else:
-                self.chess_board.move_piece(initial_position, final_position)
+                move_delta = self.get_move_delta(move_information["initial_position"], move_information["final_position"])
+                self.chess_board.move_piece(move_information["initial_position"], move_information["final_position"])
 
             self.chess_board.show_board()
+            print(move_delta)
 
             check, _ = self.chess_board.king_in_check(self.opposite_colour)
 
@@ -53,58 +69,53 @@ class game:
                     piece.en_passant_vulnerable_flag = False
 
             self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
+            self.move_number += 1
 
-    def get_move(self):
+    def interperet_notation(self, player_input):
 
-        while True:
-            player_input = list(input("Enter move: ").strip(" +#!?"))
+        if len(player_input) < 2:
+            return {"valid": False, "error": "Move patterns must be at least two characters long."}
 
-            if len(player_input) < 2:
-                print("Move patterns must be at least two characters long.")
-                continue
+        castling_flag, error = self.check_for_castling(player_input)
+        if error:
+            return {"valid": False, "error": error}
+        if castling_flag:
+            return {"valid": True, "castling_flag": True}
 
-            initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag = self.is_castling(player_input)
-            if castling_flag:
-                break
+        promotional_piece, remainder, error = self.get_promotional_piece(player_input)
+        if error:
+            return {"valid": False, "error": error}
 
-            promotional_piece, remainder, error = self.get_promotional_piece(player_input)
+        take_piece_flag, remainder = self.get_take_piece_flag(remainder)
+
+        final_position, remainder, error = self.find_final_position(remainder)
+        if not final_position:
+            return {"valid": False, "error": error}
+
+        piece_type_to_move, remainder = self.get_piece_type_from_input(remainder)
+
+        initial_row, initial_col, error = self.get_ambiguity_clues(remainder)
+        if error:
+            return {"valid": False, "error": error}
+
+        initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position)
+        if not initial_position:
             if error:
-                print(error)
-                continue
+                return {"valid": False, "error": error}
+            elif not error:
+                return {"valid": False, "error": None}
 
-            take_piece_flag, remainder = self.get_take_piece_flag(remainder)
+        if piece_type_to_move == pawn:
+            initial_position_contents = self.chess_board.get_piece(initial_position)
+            en_passant_flag = initial_position_contents.get_en_passant_flag(initial_position, final_position, True)
+        else:
+            en_passant_flag = False
 
-            final_position, remainder, error = self.find_final_position(remainder)
-            if not final_position:
-                print(error)
-                continue
+        take_piece_flag, promotional_piece, abort_move = self.confirm_user_preferences(final_position, take_piece_flag, piece_type_to_move, promotional_piece, en_passant_flag)
+        if abort_move == True:
+            return {"valid": False, "error": None}
 
-            piece_type_to_move, remainder = self.get_piece_type_from_input(remainder)
-
-            initial_row, initial_col, error = self.get_ambiguity_clues(remainder)
-            if error:
-                print(error)
-                continue
-
-            initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position)
-            if not initial_position:
-                if error:
-                    print(error)
-                continue
-
-            if piece_type_to_move == pawn:
-                initial_position_contents = self.chess_board.get_piece(initial_position)
-                en_passant_flag = initial_position_contents.get_en_passant_flag(initial_position, final_position, True)
-            else:
-                en_passant_flag = False
-
-            take_piece_flag, promotional_piece, abort_move = self.confirm_user_preferences(final_position, take_piece_flag, piece_type_to_move, promotional_piece, en_passant_flag)
-            if abort_move == True:
-                continue
-
-            break
-
-        return (initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag)
+        return {"valid": True, "initial_position": initial_position, "final_position": final_position, "take_piece_flag": take_piece_flag, "piece_type_to_move": piece_type_to_move, "promotional_piece": promotional_piece, "castling_flag": castling_flag, "en_passant_flag": en_passant_flag}
 
     def find_initial_position(self, piece_type_to_move, initial_row, initial_col, final_position):
 
@@ -326,7 +337,7 @@ class game:
 
         return(take_piece_flag, player_input)
 
-    def is_castling(self, player_input):
+    def check_for_castling(self, player_input):
 
         kingside_castling = ["o","-","o"]
         queenside_castling = ["o","-","o","-","o"]
@@ -334,30 +345,15 @@ class game:
         player_input_lower = [i.lower for i in player_input]
 
         if player_input_lower == kingside_castling:
-
             castling_flag = True
-            initial_position = list(self.chess_board.king_positions(self.turn_colour))
-            final_position = [initial_position[0], initial_position[1] + 2]
-            take_piece_flag = False
-            promotional_piece = False
-            piece_type_to_move = king
-            en_passant_flag =False
-
-            return(initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag)
-
+            return castling_flag, None
         elif player_input_lower == queenside_castling:
-
             castling_flag = True
-            initial_position = list(self.chess_board.king_positions(self.turn_colour))
-            final_position = [initial_position[0], initial_position[1] - 2]
-            take_piece_flag = False
-            promotional_piece = False
-            piece_type_to_move = king
-            en_passant_flag =False
+            return castling_flag, None
+        else:
+            castling_flag = False
 
-            return(initial_position, final_position, take_piece_flag, piece_type_to_move, promotional_piece, castling_flag, en_passant_flag)
-
-        return (None, None, None, None, None, None, None)
+        return castling_flag, None
 
     def confirm_user_preferences(self, final_position, take_piece_flag, piece_type_to_move, promotional_piece, en_passant_flag):
 
@@ -431,6 +427,88 @@ class game:
                     break
 
         return (take_piece_flag, promotional_piece, abort_move)
+
+    def get_move_delta(self, initial_position, final_position):
+
+        move_delta = {"initial_position": None,
+                      "final_position": None,
+                      "final_piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None},
+                      "initial_piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None},
+                      "captured_piece_flag": None,
+                      "captured_piece_information": {"captured_piece_position": None, "piece_type": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
+                      "promotion_piece": None,
+                      "game_metadata": {"move_number": None, "colour_to_move": None}
+                      }
+
+        move_delta["initial_position"] = initial_position
+        move_delta["final_position"] = final_position
+
+        initial_position_contents = self.chess_board.get_piece(initial_position)
+        final_position_contents = self.chess_board.get_piece(final_position)
+
+        row_i, _ = initial_position
+        row_f, _ = final_position
+
+        row_delta = row_f - row_i
+
+        if initial_position_contents.colour == "black":
+            corrected_row_delta = -row_delta
+        else:
+            corrected_row_delta = row_delta
+
+        move_delta["initial_piece_flags"]["has_moved"] = initial_position_contents.has_moved
+        move_delta["final_piece_flags"]["has_moved"] = True
+
+        if type(initial_position_contents) == pawn:
+            move_delta["initial_piece_flags"]["en_passant_vulnerable_flag"] = initial_position_contents.en_passant_vulnerable_flag
+
+            if corrected_row_delta == 2:
+                move_delta["final_piece_flags"]["en_passant_vulnerable_flag"] = True
+            else:
+                move_delta["final_piece_flags"]["en_passant_vulnerable_flag"] = False
+
+        if final_position_contents:
+            move_delta["captured_piece_flag"] = True
+
+            move_delta["captured_piece_information"]["captured_piece_position"] = final_position
+            move_delta["captured_piece_information"]["piece_type"] = type(final_position_contents)
+            move_delta["captured_piece_information"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
+
+            if type(final_position_contents) == pawn:
+                move_delta["captured_piece_information"]["piece_flags"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
+
+        move_delta["game_metadata"]["move_number"] = self.move_number
+        move_delta["game_metadata"]["colour_to_move"] = self.turn_colour
+
+        return move_delta
+
+    def get_move_delta_promotion(self, initial_position, final_position, promotional_piece):
+
+        move_delta = {"initial_position": None,
+                      "final_position": None,
+                      "final_piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None},
+                      "initial_piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None},
+                      "captured_piece_flag": None,
+                      "captured_piece_information": {"captured_piece_position": None, "piece_type": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
+                      "promotion_piece": None,
+                      "game_metadata": {"move_number": None, "colour_to_move": None}
+                      }
+
+        return move_delta
+
+    def get_move_delta_en_passant(self, initial_position, final_position):
+
+        move_delta = {"initial_position": None,
+                      "final_position": None,
+                      "final_piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None},
+                      "initial_piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None},
+                      "captured_piece_flag": None,
+                      "captured_piece_information": {"captured_piece_position": None, "piece_type": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
+                      "promotion_piece": None,
+                      "game_metadata": {"move_number": None, "colour_to_move": None}
+                      }
+
+        return move_delta
 
 chess_board = chess_board()
 chess_board.set_board()
