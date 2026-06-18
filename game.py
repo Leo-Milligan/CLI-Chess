@@ -59,7 +59,12 @@ class game:
             self.chess_board.show_board()
 
             self.move_history.append(move_delta)
-            print(self.move_history)
+
+            if move_delta["captured_piece_information"]["captured_piece"]:
+                if self.turn_colour == "white":
+                    self.captured_black_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
+                else:
+                    self.captured_white_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
 
             check, _ = self.chess_board.king_in_check(self.opposite_colour)
 
