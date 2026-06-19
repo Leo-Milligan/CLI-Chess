@@ -21,16 +21,16 @@ class game:
         self.winner = None
         self.game_resigned = False
         self.draw = False
-        self.draw_being_offered = False
+        self.draw_offered = False
         self.chess_board = chess_board
 
     def game_loop(self):
-
         self.chess_board.show_board()
 
         while True:
+            if self.draw_offered == True:
+                self.draw_offered = False
 
-            if self.draw_being_offered == True:
                 while True:
                     draw_response = input("Opponent has offered a draw. Do you wish to accept it (y/n): ").strip()
                     if draw_response in ("y", "n"):
@@ -41,7 +41,12 @@ class game:
                     self.draw = True
                     break
 
+                elif draw_response == "n":
+                    self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
+                    continue
+
             while True:
+
                 player_input = list(input("Enter move: ").strip(" +#!?"))
 
                 move_information = self.interperet_move_notation(player_input)
@@ -50,6 +55,7 @@ class game:
                     if move_information["error"]:
                         print(move_information["error"])
                     continue
+
                 break
 
             if move_information["resign"] == True:
@@ -59,7 +65,8 @@ class game:
                 break
 
             if move_information["draw_offer"] == True:
-                self.draw_being_offered = True
+                self.draw_offered = True
+                self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
                 continue
 
             if move_information["castling_flag"]:
