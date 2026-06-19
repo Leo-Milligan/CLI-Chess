@@ -19,6 +19,9 @@ class game:
         self.captured_black_pieces = []
         self.move_history = []
         self.winner = None
+        self.game_resigned = False
+        self.draw = False
+        self.draw_being_offered = False
         self.chess_board = chess_board
 
     def game_loop(self):
@@ -26,6 +29,17 @@ class game:
         self.chess_board.show_board()
 
         while True:
+
+            if self.draw_being_offered == True:
+                while True:
+                    draw_response = input("Opponent has offered a draw. Do you wish to accept it (y/n): ").strip()
+                    if draw_response in ("y", "n"):
+                        break
+
+                if draw_response == "y":
+                    print("Game ends in a draw!")
+                    self.draw = True
+                    break
 
             while True:
                 player_input = list(input("Enter move: ").strip(" +#!?"))
@@ -37,6 +51,16 @@ class game:
                         print(move_information["error"])
                     continue
                 break
+
+            if move_information["resign"] == True:
+                print(f"{self.turn_colour} resigns!")
+                self.game_resigned = True
+                self.winner = self.opposite_colour
+                break
+
+            if move_information["draw_offer"] == True:
+                self.draw_being_offered = True
+                continue
 
             if move_information["castling_flag"]:
                 print("This is where we should call the castle move function")
@@ -75,6 +99,7 @@ class game:
                 checkmate = False
 
             if checkmate:
+                self.winner = self.turn_colour
                 break
 
             for position in self.chess_board.piece_positions[self.opposite_colour]:
@@ -86,6 +111,12 @@ class game:
             self.move_number += 1
 
     def interperet_move_notation(self, player_input):
+
+        if len(player_input) == 1 and player_input[0].lower() == "r":
+            return {"valid": True, "resign": True, "draw_offer": False}
+
+        if len(player_input) == 1 and player_input[0].lower() == "d":
+            return {"valid": True, "resign": False, "draw_offer": True}
 
         if len(player_input) < 2:
             return {"valid": False, "error": "Move patterns must be at least two characters long."}
@@ -129,7 +160,7 @@ class game:
         if abort_move == True:
             return {"valid": False, "error": None}
 
-        return {"valid": True, "initial_position": initial_position, "final_position": final_position, "take_piece_flag": take_piece_flag, "piece_type_to_move": piece_type_to_move, "promotional_piece": promotional_piece, "castling_flag": castling_flag, "en_passant_flag": en_passant_flag}
+        return {"valid": True, "resign": False, "draw_offer": False, "initial_position": initial_position, "final_position": final_position, "take_piece_flag": take_piece_flag, "piece_type_to_move": piece_type_to_move, "promotional_piece": promotional_piece, "castling_flag": castling_flag, "en_passant_flag": en_passant_flag}
 
     def find_initial_position(self, piece_type_to_move, initial_row, initial_col, final_position):
 
