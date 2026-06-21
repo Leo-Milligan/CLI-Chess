@@ -46,7 +46,6 @@ class game:
                     continue
 
             while True:
-
                 player_input = list(input("Enter move: ").strip(" +#!?"))
 
                 move_information = self.interperet_move_notation(player_input)
@@ -69,23 +68,7 @@ class game:
                 self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
                 continue
 
-            if move_information["castling_flag"]:
-                print("This is where we should call the castle move function")
-
-            elif move_information["piece_type_to_move"] == pawn and move_information["promotional_piece"]:
-                move_delta_initial = self.get_move_delta_promotion(move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"], None)
-                self.chess_board.move_piece_with_promotion( move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"])
-                move_delta = self.get_move_delta_promotion(move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"], move_delta_initial)
-
-            elif move_information["piece_type_to_move"] == pawn and move_information["en_passant_flag"]:
-                move_delta_initial = self.get_move_delta_en_passant(move_information["initial_position"], move_information["final_position"], None)
-                self.chess_board.move_piece_with_en_passant(move_information["initial_position"], move_information["final_position"])
-                move_delta = self.get_move_delta_en_passant(move_information["initial_position"], move_information["final_position"], move_delta_initial)
-
-            else:
-                move_delta_initial = self.get_move_delta(move_information["initial_position"], move_information["final_position"], None)
-                self.chess_board.move_piece(move_information["initial_position"], move_information["final_position"])
-                move_delta = self.get_move_delta(move_information["initial_position"], move_information["final_position"], move_delta_initial)
+            move_delta = self.move_controller(move_information)
 
             self.chess_board.show_board()
 
@@ -375,7 +358,6 @@ class game:
 
         return (None, player_input, None)
 
-
     def get_take_piece_flag(self, player_input):
 
         if "x" in player_input:
@@ -621,6 +603,72 @@ class game:
                 move_delta["piece_flags_final"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
 
         return move_delta
+
+    def move_controller(self, move_information):
+
+        if move_information["castling_flag"]:
+            print("This is where we should call the castle move function")
+
+        elif move_information["piece_type_to_move"] == pawn and move_information["promotional_piece"]:
+            move_delta_initial = self.get_move_delta_promotion(move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"], None)
+            self.chess_board.move_piece_with_promotion( move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"])
+            move_delta = self.get_move_delta_promotion(move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"], move_delta_initial)
+
+        elif move_information["piece_type_to_move"] == pawn and move_information["en_passant_flag"]:
+            move_delta_initial = self.get_move_delta_en_passant(move_information["initial_position"], move_information["final_position"], None)
+            self.chess_board.move_piece_with_en_passant(move_information["initial_position"], move_information["final_position"])
+            move_delta = self.get_move_delta_en_passant(move_information["initial_position"], move_information["final_position"], move_delta_initial)
+
+        else:
+            move_delta_initial = self.get_move_delta(move_information["initial_position"], move_information["final_position"], None)
+            self.chess_board.move_piece(move_information["initial_position"], move_information["final_position"])
+            move_delta = self.get_move_delta(move_information["initial_position"], move_information["final_position"], move_delta_initial)
+
+        return move_delta
+
+    def check_for_insufficient_material(self):
+
+        white_pieces = []
+        black_pieces = []
+
+        for position in self.chess_board.piece_positions["white"]:
+            piece = type(self.chess_board.piece_positions["white"][position])
+
+            if piece == bishop:
+                white_bishop_position = position
+                white_bishop_cell_colour = self.chess_board.get_cell_colour(white_bishop_position)
+
+            white_pieces.append(piece)
+
+        for position in self.chess_board.piece_positions["black"]:
+            piece = type(self.chess_board.piece_positions["black"][position])
+
+            if piece == bishop:
+                black_bishop_position = position
+                black_bishop_cell_colour = self.chess_board.get_cell_colour(black_bishop_position)
+
+            black_pieces.append(piece)
+
+        if len(white_pieces) > 2 or len(black_pieces) > 2:
+            return False
+
+        if set(white_pieces) == {king}:
+            if (set(black_pieces) == {king}
+               or set(black_pieces) == {king, bishop}
+               or set(black_pieces) == {king, knight}):
+                return True
+
+        elif set(black_pieces) == {king}:
+            if (set(white_pieces) == {king}
+               or set(white_pieces) == {king, bishop}
+               or set(white_pieces) == {king, knight}):
+                return True
+
+        elif set(white_pieces) == {king, bishop} and set(black_pieces) == {king, bishop}:
+            if white_bishop_cell_colour == black_bishop_cell_colour:
+                return True
+
+        return False
 
 chess_board = chess_board()
 chess_board.set_board()

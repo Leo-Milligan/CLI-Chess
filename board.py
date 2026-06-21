@@ -333,6 +333,16 @@ class chess_board:
         else:
             return False
 
+    def get_cell_colour(self, position):
+
+        row, col = position
+
+        if (row % 2 == 0 and col % 2 == 0) or (row % 2 == 1 and col % 2 == 1):
+            return "dark"
+        else:
+            return "light"
+
+
     def set_board(self):
 
         self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]

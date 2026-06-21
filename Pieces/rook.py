@@ -42,3 +42,33 @@ class rook(piece):
             return (False, "Move obstructed (hint: include 'x' to take a piece).", intermediate_position_list)
 
         return (True, None, intermediate_position_list)
+
+    def get_moves_to_check(self, initial_position):
+
+        final_positions_to_check = []
+
+        row_i, col_i = initial_position
+
+        cells_right_of_intial_position = self.chess_board.num_rows - (row_i + 1)
+        cells_left_of_intial_position = row_i
+
+        cells_above_intial_position = self.chess_board.num_cols - (col_i + 1)
+        cells_below_intial_position = col_i
+
+        for i in range(cells_left_of_intial_position):
+            row_f = row_i - (i + 1)
+            final_positions_to_check.append([row_f, col_i])
+
+        for i in range(cells_right_of_intial_position):
+            row_f = row_i + (i + 1)
+            final_positions_to_check.append([row_f, col_i])
+
+        for i in range(cells_below_intial_position):
+            col_f = col_i - (i + 1)
+            final_positions_to_check.append([row_i, col_f])
+
+        for i in range(cells_above_intial_position):
+            col_f = col_i + (i + 1)
+            final_positions_to_check.append([row_i, col_f])
+
+        return final_positions_to_check

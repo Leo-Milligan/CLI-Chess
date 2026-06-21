@@ -29,3 +29,31 @@ class knight(piece):
             return (False, "Move obstructed (hint: include 'x' to take a piece).", intermediate_position_list)
 
         return (True, None, intermediate_position_list)
+
+    def get_moves_to_check(self, initial_position):
+
+        final_positions_to_check = []
+
+        row_i, col_i = initial_position
+
+        for delta_row in (-2, 2):
+            for delta_col in (-1, 1):
+                row_f = row_i + delta_row
+                col_f = col_i + delta_col
+
+                valid, _ = self.chess_board.check_position_exists([row_f, col_f])
+
+                if valid:
+                    final_positions_to_check.append([row_f,col_f])
+
+        for delta_row in (-1, 1):
+            for delta_col in (-2, 2):
+                row_f = row_i + delta_row
+                col_f = col_i + delta_col
+
+                valid, _ = self.chess_board.check_position_exists([row_f, col_f])
+
+                if valid:
+                    final_positions_to_check.append([row_f,col_f])
+
+        return final_positions_to_check
