@@ -99,6 +99,10 @@ class chess_board:
         if valid == False:
             raise ValueError(error)
 
+        position_contents = self.get_piece(position)
+        if position_contents:
+            self.remove_piece(position)
+
         if piece == None:
             self.remove_piece(position)
             return
@@ -136,9 +140,8 @@ class chess_board:
         initial_position_contents = self.get_piece(initial_position)
 
         self.remove_piece(initial_position)
-        self.remove_piece(final_position)
-
         self.insert_piece(initial_position_contents, final_position)
+
         initial_position_contents.has_moved = True
 
         row_delta = final_position[0] - initial_position[0]
@@ -183,8 +186,8 @@ class chess_board:
 
         self.remove_piece(initial_position)
         self.remove_piece(adjacent_position)
-
         self.insert_piece(initial_position_contents, final_position)
+
         initial_position_contents.has_moved = True
 
     def is_square_attacked(self, position, by_colour):
@@ -264,9 +267,6 @@ class chess_board:
                 self.insert_piece(initial_position_contents, position)
 
                 king_in_check, _ = self.king_in_check(colour)
-
-                self.remove_piece(friendly_piece_position)
-                self.remove_piece(position)
 
                 self.insert_piece(initial_position_contents, friendly_piece_position)
                 self.insert_piece(final_position_contents, position)

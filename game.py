@@ -694,7 +694,6 @@ class game:
             piece = self.chess_board.piece_positions[colour][position]
 
             valid_final_positions = piece.get_possible_moves(position)
-            #print(f"valid_final_positions: {valid_final_positions}")
 
             if valid_final_positions:
                 return False
@@ -702,6 +701,10 @@ class game:
         return True
 
 chess_board = chess_board()
-chess_board.set_board()
+# chess_board.set_board()
+chess_board.create_piece(king, "white", [0,0])
+chess_board.create_piece(king, "black", [0,7])
+chess_board.create_piece(queen, "black", [1,0])
+chess_board.create_piece(queen, "white", [5,3])
 chess_game = game(chess_board)
 chess_game.game_loop()

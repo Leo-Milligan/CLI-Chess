@@ -43,9 +43,6 @@ class piece:
 
         king_in_check, _ = self.chess_board.king_in_check(initial_position_contents.colour)
 
-        self.chess_board.remove_piece(initial_position)
-        self.chess_board.remove_piece(final_position)
-
         self.chess_board.insert_piece(initial_position_contents, initial_position)
         self.chess_board.insert_piece(final_position_contents, final_position)
 
@@ -58,11 +55,9 @@ class piece:
 
         valid_final_positions = []
         final_positions_to_check = self.get_moves_to_check(initial_position)
-        #print(final_positions_to_check)
 
         for position in final_positions_to_check:
-            valid, e = self.check_move_validity(initial_position, position, True)
-            #print(f"{valid}: + {e}")
+            valid, _ = self.check_move_validity(initial_position, position, True)
             if valid:
                 valid_final_positions.append(position)
 
