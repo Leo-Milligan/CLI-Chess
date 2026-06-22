@@ -202,6 +202,7 @@ class chess_board:
                 attacking_cells.append(cell)
 
         cell_is_attacked = True if attacking_cells else False
+
         return (cell_is_attacked, attacking_cells)
 
     def king_in_check(self, colour):
@@ -218,49 +219,16 @@ class chess_board:
     def king_in_checkmate(self, colour):
 
         king_position = list(self.king_positions[colour])
+        king_position_contents = self.get_piece(king_position)
         opposite_colour = "black" if colour == "white" else "white"
 
         cell_is_attacked, attacking_cells =  self.is_square_attacked(king_position, opposite_colour)
         if not cell_is_attacked:
             return False
 
-        king_row, king_col = king_position
-        possible_safe_positions = []
-
-        for delta_row in [-1, 0, 1]:
-            for delta_col in [-1, 0, 1]:
-
-                row = king_row + delta_row
-                col = king_col + delta_col
-                position = [row, col]
-
-                valid, _ = self.check_position_exists(position)
-                if not valid:
-                    continue
-
-                position_contents = self.get_piece(position)
-                if position_contents and position_contents.colour == colour:
-                    continue
-
-                possible_safe_positions.append(position)
-
-
-        for position in possible_safe_positions:
-            initial_position_contents = self.get_piece(king_position)
-            final_position_contents = self.get_piece(position)
-
-            self.move_piece(king_position, position)
-
-            king_in_check, _ = self.king_in_check(colour)
-
-            self.remove_piece(king_position)
-            self.remove_piece(position)
-
-            self.insert_piece(initial_position_contents, king_position)
-            self.insert_piece(final_position_contents, position)
-
-            if not king_in_check:
-                return False
+        possible_safe_positions = king_position_contents.get_possible_moves(king_position)
+        if possible_safe_positions:
+            return False
 
         total_intermediate_positions = []
         for attacking_cell in attacking_cells:
@@ -292,7 +260,8 @@ class chess_board:
                 if not valid:
                     continue
 
-                self.move_piece(friendly_piece_position, position)
+                self.remove_piece(friendly_piece_position)
+                self.insert_piece(initial_position_contents, position)
 
                 king_in_check, _ = self.king_in_check(colour)
 

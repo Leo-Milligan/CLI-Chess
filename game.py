@@ -45,6 +45,11 @@ class game:
                     self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
                     continue
 
+            is_draw, message = self.check_for_draw(self.turn_colour)
+            if is_draw:
+                print(message)
+                break
+
             while True:
                 player_input = list(input("Enter move: ").strip(" +#!?"))
 
@@ -90,6 +95,7 @@ class game:
 
             if checkmate:
                 self.winner = self.turn_colour
+                print(f"{self.opposite_colour} king in checkmate!")
                 break
 
             for position in self.chess_board.piece_positions[self.opposite_colour]:
@@ -157,9 +163,9 @@ class game:
         possible_positions = []
         for key in self.chess_board.piece_positions[self.turn_colour]:
 
-            if initial_row and key[0] != initial_row:
+            if initial_row is not None and key[0] != initial_row:
                 continue
-            elif initial_col and key[1] != initial_col:
+            elif initial_col is not None and key[1] != initial_col:
                 continue
 
             cell_contents = self.chess_board.piece_positions[self.turn_colour][key]
@@ -626,6 +632,18 @@ class game:
 
         return move_delta
 
+    def check_for_draw(self, colour):
+
+        insufficient_material = self.check_for_insufficient_material()
+        if insufficient_material:
+            return True, "Draw due to insufficiant material."
+
+        stalemate = self.check_for_stalemate(colour)
+        if stalemate:
+            return True, f"Draw due to {colour} being in stalemate."
+
+        return False, None
+
     def check_for_insufficient_material(self):
 
         white_pieces = []
@@ -669,6 +687,19 @@ class game:
                 return True
 
         return False
+
+    def check_for_stalemate(self, colour):
+
+        for position in list(self.chess_board.piece_positions[colour]):
+            piece = self.chess_board.piece_positions[colour][position]
+
+            valid_final_positions = piece.get_possible_moves(position)
+            #print(f"valid_final_positions: {valid_final_positions}")
+
+            if valid_final_positions:
+                return False
+
+        return True
 
 chess_board = chess_board()
 chess_board.set_board()
