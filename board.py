@@ -59,7 +59,7 @@ class chess_board:
     def create_piece(self, piece_type, colour, position):
 
         if piece_type not in piece_types:
-            raise NameError(f"That is not a valid piece type.")
+            raise NameError("That is not a valid piece type.")
         elif colour not in ("white", "black"):
             raise NameError("That is not a valid colour.")
 
@@ -90,7 +90,7 @@ class chess_board:
 
         self.piece_positions[position_contents.colour].pop(tuple(position), None)
 
-        if position_contents.piece_name == "king":
+        if position_contents == king:
             self.king_positions.pop(position_contents.colour, None)
 
     def insert_piece(self, piece, position):
@@ -99,23 +99,23 @@ class chess_board:
         if valid == False:
             raise ValueError(error)
 
-        position_contents = self.get_piece(position)
-        if position_contents:
-            self.remove_piece(position)
-
         if piece == None:
             self.remove_piece(position)
             return
 
         if type(piece) not in piece_types:
-            raise NameError(f"That is not a valid piece type.")
+            raise NameError("That is not a valid piece type.")
+
+        position_contents = self.get_piece(position)
+        if position_contents:
+            self.remove_piece(position)
 
         row, col = position
         self.board[row][col] = piece
 
         self.piece_positions[piece.colour].update({tuple(position): piece})
 
-        if piece.piece_name == "king":
+        if piece == king:
             self.king_positions.update({piece.colour: tuple(position)})
 
     def get_piece(self, position):
@@ -248,7 +248,7 @@ class chess_board:
 
             friendly_piece = self.get_piece(friendly_piece_position)
 
-            if friendly_piece.piece_name == "king":
+            if friendly_piece == king:
                 continue
 
             pinned_piece = self.is_piece_pinned(friendly_piece_position)
@@ -369,7 +369,7 @@ class chess_board:
                 if cell_contents == None:
                     piece_symbol = " "
                 else:
-                    piece_name = cell_contents.piece_name
+                    piece_name = type(cell_contents).__name__
                     piece_colour = cell_contents.colour
                     piece_symbol = piece_symbols[piece_colour][piece_name]
 

@@ -14,18 +14,29 @@ class game:
     def __init__(self, chess_board):
         self.turn_colour = "white"
         self.opposite_colour = "black"
+
         self.move_number = 1
+        self.moves_since_capture_or_pawn_move = 0
+
         self.captured_white_pieces = []
         self.captured_black_pieces = []
         self.move_history = []
+        self.position_history_for_draw_viability = []
+
         self.winner = None
         self.game_resigned = False
+
         self.draw = False
         self.draw_offered = False
+        self.immediate_draw_possible = False
+
         self.chess_board = chess_board
 
     def game_loop(self):
         self.chess_board.show_board()
+
+        position_overview = self.get_position_overview
+        self.position_history_for_draw_viability.append(position_overview)
 
         while True:
             if self.draw_offered == True:
@@ -44,11 +55,6 @@ class game:
                 elif draw_response == "n":
                     self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
                     continue
-
-            is_draw, message = self.check_for_draw(self.turn_colour)
-            if is_draw:
-                print(message)
-                break
 
             while True:
                 player_input = list(input("Enter move: ").strip(" +#!?"))
@@ -70,11 +76,21 @@ class game:
 
             if move_information["draw_offer"] == True:
                 self.draw_offered = True
+
+                if self.immediate_draw_possible:
+
+                    if self.moves_since_capture_or_pawn_move >= 50:
+                        print("Draw due to there being no pawn moves or piece captures within the last 50 moves.")
+
+                    self.draw = True
+                    break
+
                 self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
+
                 continue
 
             move_delta = self.move_controller(move_information)
-
+            self.move_number += 1
             self.chess_board.show_board()
 
             self.move_history.append(move_delta)
@@ -84,6 +100,10 @@ class game:
                     self.captured_black_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
                 else:
                     self.captured_white_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
+
+            position_overview = self.get_position_overview()
+
+            self.update_counters_for_draw(move_information, position_overview)
 
             check, _ = self.chess_board.king_in_check(self.opposite_colour)
 
@@ -98,13 +118,17 @@ class game:
                 print(f"{self.opposite_colour} king in checkmate!")
                 break
 
+            is_draw, message = self.check_for_draw(self.turn_colour)
+            if is_draw:
+                print(message)
+                break
+
             for position in self.chess_board.piece_positions[self.opposite_colour]:
                 piece = self.chess_board.get_piece(position)
                 if type(piece) == pawn:
                     piece.en_passant_vulnerable_flag = False
 
             self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
-            self.move_number += 1
 
     def interperet_move_notation(self, player_input):
 
@@ -474,32 +498,28 @@ class game:
         final_position_contents = self.chess_board.get_piece(final_position)
 
         if not move_delta:
-            move_delta = {"initial_position": None,
-                        "final_position": None,
-                        "piece_flags_initial": {"has_moved": None, "en_passant_vulnerable_flag": None},
-                        "piece_flags_final": {"has_moved": None, "en_passant_vulnerable_flag": None},
+            move_delta = {"piece_information_initial": {"piece": None, "piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
+                        "piece_information_final": {"piece": None, "piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
                         "captured_piece_flag": None,
-                        "captured_piece_information": {"captured_piece": None,"captured_piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
-                        "promotion_piece_flag": None,
-                        "promotion_piece_information": {"promotion_piece": None,"promotion_piece_position": None, "piece_flags": {"has_moved": None}},
+                        "captured_piece_information": {"captured_piece": None, "captured_piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
                         "game_metadata": {"move_number": None, "colour_to_move": None}
                         }
 
-            move_delta["initial_position"] = initial_position
-            move_delta["final_position"] = final_position
+            move_delta["piece_information_initial"]["piece"] = initial_position_contents
 
-            move_delta["piece_flags_initial"]["has_moved"] = initial_position_contents.has_moved
+            move_delta["piece_information_initial"]["piece_position"] = initial_position
 
+            move_delta["piece_information_initial"]["piece_flags"]["has_moved"] = initial_position_contents.has_moved
             if type(initial_position_contents) == pawn:
-                move_delta["piece_flags_initial"]["en_passant_vulnerable_flag"] = initial_position_contents.en_passant_vulnerable_flag
+                move_delta["piece_information_initial"]["piece_flags"]["en_passant_vulnerable_flag"] = initial_position_contents.en_passant_vulnerable_flag
 
             if final_position_contents:
                 move_delta["captured_piece_flag"] = True
 
                 move_delta["captured_piece_information"]["captured_piece"] = final_position_contents
                 move_delta["captured_piece_information"]["captured_piece_position"] = final_position
-                move_delta["captured_piece_information"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
 
+                move_delta["captured_piece_information"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
                 if type(final_position_contents) == pawn:
                     move_delta["captured_piece_information"]["piece_flags"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
 
@@ -507,57 +527,13 @@ class game:
             move_delta["game_metadata"]["colour_to_move"] = self.turn_colour
 
         elif move_delta:
-            move_delta["piece_flags_final"]["has_moved"] = final_position_contents.has_moved
-            if type(final_position_contents) == pawn:
-                move_delta["piece_flags_final"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
+            move_delta["piece_information_final"]["piece"] = final_position_contents
 
-        return move_delta
+            move_delta["piece_information_final"]["piece_position"] = final_position
 
-    def get_move_delta_promotion(self, initial_position, final_position, promotional_piece, move_delta):
-
-        initial_position_contents = self.chess_board.get_piece(initial_position)
-        final_position_contents = self.chess_board.get_piece(final_position)
-
-        if not move_delta:
-            move_delta = {"initial_position": None,
-                        "final_position": None,
-                        "piece_flags_initial": {"has_moved": None, "en_passant_vulnerable_flag": None},
-                        "piece_flags_final": {"has_moved": None, "en_passant_vulnerable_flag": None},
-                        "captured_piece_flag": None,
-                        "captured_piece_information": {"captured_piece": None,"captured_piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
-                        "promotion_piece_flag": None,
-                        "promotion_piece_information": {"promotion_piece": None,"promotion_piece_position": None, "piece_flags": {"has_moved": None}},
-                        "game_metadata": {"move_number": None, "colour_to_move": None}
-                        }
-
-            move_delta["initial_position"] = initial_position
-            move_delta["final_position"] = final_position
-
-            move_delta["piece_flags_initial"]["has_moved"] = initial_position_contents.has_moved
-            move_delta["piece_flags_final"]["has_moved"] = True
-
+            move_delta["piece_information_final"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
             if type(initial_position_contents) == pawn:
-                move_delta["piece_flags_initial"]["en_passant_vulnerable_flag"] = initial_position_contents.en_passant_vulnerable_flag
-
-            if final_position_contents:
-                move_delta["captured_piece_flag"] = True
-
-                move_delta["captured_piece_information"]["captured_piece"] = final_position_contents
-                move_delta["captured_piece_information"]["captured_piece_position"] = final_position
-                move_delta["captured_piece_information"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
-
-                if type(final_position_contents) == pawn:
-                    move_delta["captured_piece_information"]["piece_flags"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
-
-            move_delta["game_metadata"]["move_number"] = self.move_number
-            move_delta["game_metadata"]["colour_to_move"] = self.turn_colour
-
-        elif move_delta:
-            move_delta["piece_flags_final"]["has_moved"] = final_position_contents.has_moved
-            move_delta["promotion_piece_flag"] = True
-            move_delta["promotion_piece_information"]["promotion_piece"] = final_position_contents
-            move_delta["promotion_piece_information"]["promotion_piece_position"] = final_position
-            move_delta["promotion_piece_information"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
+                move_delta["piece_information_final"]["piece_flags"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
 
         return move_delta
 
@@ -567,24 +543,20 @@ class game:
         final_position_contents = self.chess_board.get_piece(final_position)
 
         if not move_delta:
-            move_delta = {"initial_position": None,
-                         "final_position": None,
-                         "piece_flags_initial": {"has_moved": None, "en_passant_vulnerable_flag": None},
-                         "piece_flags_final": {"has_moved": None, "en_passant_vulnerable_flag": None},
-                         "captured_piece_flag": None,
-                         "captured_piece_information": {"captured_piece": None,"captured_piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
-                         "promotion_piece_flag": None,
-                         "promotion_piece_information": {"promotion_piece": None,"promotion_piece_position": None, "piece_flags": {"has_moved": None}},
-                         "game_metadata": {"move_number": None, "colour_to_move": None}
-                         }
+            move_delta = {"piece_information_initial": {"piece": None, "piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
+                        "piece_information_final": {"piece": None, "piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
+                        "captured_piece_flag": None,
+                        "captured_piece_information": {"captured_piece": None, "captured_piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None}},
+                        "game_metadata": {"move_number": None, "colour_to_move": None}
+                        }
 
-            move_delta["initial_position"] = initial_position
-            move_delta["final_position"] = final_position
+            move_delta["piece_information_initial"]["piece"] = initial_position_contents
 
-            move_delta["piece_flags_initial"]["has_moved"] = initial_position_contents.has_moved
+            move_delta["piece_information_initial"]["piece_position"] = initial_position
 
+            move_delta["piece_information_initial"]["piece_flags"]["has_moved"] = initial_position_contents.has_moved
             if type(initial_position_contents) == pawn:
-                move_delta["piece_flags_initial"]["en_passant_vulnerable_flag"] = initial_position_contents.en_passant_vulnerable_flag
+                move_delta["piece_information_initial"]["piece_flags"]["en_passant_vulnerable_flag"] = initial_position_contents.en_passant_vulnerable_flag
 
             _, col_i = initial_position
             _, col_f = final_position
@@ -604,9 +576,13 @@ class game:
             move_delta["game_metadata"]["colour_to_move"] = self.turn_colour
 
         elif move_delta:
-            move_delta["piece_flags_final"]["has_moved"] = final_position_contents.has_moved
-            if type(final_position_contents) == pawn:
-                move_delta["piece_flags_final"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
+            move_delta["piece_information_final"]["piece"] = final_position_contents
+
+            move_delta["piece_information_final"]["piece_position"] = final_position
+
+            move_delta["piece_information_final"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
+            if type(initial_position_contents) == pawn:
+                move_delta["piece_information_final"]["piece_flags"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
 
         return move_delta
 
@@ -616,9 +592,9 @@ class game:
             print("This is where we should call the castle move function")
 
         elif move_information["piece_type_to_move"] == pawn and move_information["promotional_piece"]:
-            move_delta_initial = self.get_move_delta_promotion(move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"], None)
+            move_delta_initial = self.get_move_delta(move_information["initial_position"], move_information["final_position"], None)
             self.chess_board.move_piece_with_promotion( move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"])
-            move_delta = self.get_move_delta_promotion(move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"], move_delta_initial)
+            move_delta = self.get_move_delta(move_information["initial_position"], move_information["final_position"], move_delta_initial)
 
         elif move_information["piece_type_to_move"] == pawn and move_information["en_passant_flag"]:
             move_delta_initial = self.get_move_delta_en_passant(move_information["initial_position"], move_information["final_position"], None)
@@ -632,17 +608,68 @@ class game:
 
         return move_delta
 
+    def get_position_overview(self):
+
+        piece_positions = self.chess_board.piece_positions
+
+        position_overview = {"white": {},
+                             "black": {}
+                             }
+
+        for colour in list(piece_positions):
+            for position in list(piece_positions[colour]):
+
+                piece = piece_positions[colour][position]
+
+                if type(piece) == pawn:
+                    en_passant_vulnerable_flag = piece.en_passant_vulnerable_flag
+                    position_overview[colour][position] = {"piece_type": type(piece), "en_passant_vulnerable_flag": en_passant_vulnerable_flag}
+                elif type(piece) == king or type(piece) == rook:
+                    can_castle_if_valid = piece.can_castle_if_valid
+                    position_overview[colour][position] = {"piece_type": type(piece), "can_castle_if_valid": can_castle_if_valid}
+                else:
+                    position_overview[colour][position] = {"piece_type": type(piece)}
+
+        return position_overview
+
+    def update_counters_for_draw(self, move_information, position_overview):
+
+            if move_information["take_piece_flag"]:
+                self.moves_since_capture_or_pawn_move = 0
+            elif move_information["piece_type_to_move"] == pawn:
+                self.moves_since_capture_or_pawn_move = 0
+            else:
+                self.moves_since_capture_or_pawn_move += 1
+
+            if move_information["take_piece_flag"]:
+                self.position_history_for_draw_viability = []
+            elif move_information["piece_type_to_move"] == pawn:
+                self.position_history_for_draw_viability = []
+            elif move_information["promotional_piece"]:
+                self.position_history_for_draw_viability = []
+            elif move_information["castling_flag"]:
+                self.position_history_for_draw_viability = []
+            else:
+                self.position_history_for_draw_viability.append(position_overview)
+
     def check_for_draw(self, colour):
+
+        if self.moves_since_capture_or_pawn_move >= 50:
+            self.immediate_draw_possible = True
+
+        repeated_position_flag = self.check_for_repeated_position()
+        if repeated_position_flag:
+            self.immediate_draw_possible = True
 
         insufficient_material = self.check_for_insufficient_material()
         if insufficient_material:
-            return True, "Draw due to insufficiant material."
+            return (True, "Draw due to insufficiant material.")
 
         stalemate = self.check_for_stalemate(colour)
         if stalemate:
-            return True, f"Draw due to {colour} being in stalemate."
+            return (True, f"Draw due to {colour} being in stalemate.")
 
-        return False, None
+        return (False, None)
 
     def check_for_insufficient_material(self):
 
@@ -700,11 +727,27 @@ class game:
 
         return True
 
+    def check_for_repeated_position(self):
+
+        if len(self.position_history_for_draw_viability) < 3:
+            return False
+
+        current_position_overview = self.position_history_for_draw_viability.pop()
+
+        counter = 0
+
+        for position_overview in list(self.position_history_for_draw_viability):
+
+            if position_overview == current_position_overview:
+                counter += 1
+
+            if counter >= 2:
+                return True
+
+        return False
+
+
 chess_board = chess_board()
-# chess_board.set_board()
-chess_board.create_piece(king, "white", [0,0])
-chess_board.create_piece(king, "black", [0,7])
-chess_board.create_piece(queen, "black", [1,0])
-chess_board.create_piece(queen, "white", [5,3])
+chess_board.set_board()
 chess_game = game(chess_board)
 chess_game.game_loop()
