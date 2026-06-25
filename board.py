@@ -59,7 +59,7 @@ class chess_board:
     def create_piece(self, piece_type, colour, position):
 
         if piece_type not in piece_types:
-            raise NameError(f"That is not a valid piece type.")
+            raise NameError("That is not a valid piece type.")
         elif colour not in ("white", "black"):
             raise NameError("That is not a valid colour.")
 
@@ -90,7 +90,7 @@ class chess_board:
 
         self.piece_positions[position_contents.colour].pop(tuple(position), None)
 
-        if position_contents.piece_name == "king":
+        if position_contents == king:
             self.king_positions.pop(position_contents.colour, None)
 
     def insert_piece(self, piece, position):
@@ -104,14 +104,18 @@ class chess_board:
             return
 
         if type(piece) not in piece_types:
-            raise NameError(f"That is not a valid piece type.")
+            raise NameError("That is not a valid piece type.")
+
+        position_contents = self.get_piece(position)
+        if position_contents:
+            self.remove_piece(position)
 
         row, col = position
         self.board[row][col] = piece
 
         self.piece_positions[piece.colour].update({tuple(position): piece})
 
-        if piece.piece_name == "king":
+        if piece == king:
             self.king_positions.update({piece.colour: tuple(position)})
 
     def get_piece(self, position):
@@ -136,9 +140,8 @@ class chess_board:
         initial_position_contents = self.get_piece(initial_position)
 
         self.remove_piece(initial_position)
-        self.remove_piece(final_position)
-
         self.insert_piece(initial_position_contents, final_position)
+
         initial_position_contents.has_moved = True
 
         row_delta = final_position[0] - initial_position[0]
@@ -183,8 +186,8 @@ class chess_board:
 
         self.remove_piece(initial_position)
         self.remove_piece(adjacent_position)
-
         self.insert_piece(initial_position_contents, final_position)
+
         initial_position_contents.has_moved = True
 
     def find_rook_to_castle(self, side, colour):
@@ -312,6 +315,7 @@ class chess_board:
                 attacking_cells.append(cell)
 
         cell_is_attacked = True if attacking_cells else False
+
         return (cell_is_attacked, attacking_cells)
 
     def king_in_check(self, colour):
@@ -328,49 +332,16 @@ class chess_board:
     def king_in_checkmate(self, colour):
 
         king_position = list(self.king_positions[colour])
+        king_position_contents = self.get_piece(king_position)
         opposite_colour = "black" if colour == "white" else "white"
 
         cell_is_attacked, attacking_cells =  self.is_square_attacked(king_position, opposite_colour)
         if not cell_is_attacked:
             return False
 
-        king_row, king_col = king_position
-        possible_safe_positions = []
-
-        for delta_row in [-1, 0, 1]:
-            for delta_col in [-1, 0, 1]:
-
-                row = king_row + delta_row
-                col = king_col + delta_col
-                position = [row, col]
-
-                valid, _ = self.check_position_exists(position)
-                if not valid:
-                    continue
-
-                position_contents = self.get_piece(position)
-                if position_contents and position_contents.colour == colour:
-                    continue
-
-                possible_safe_positions.append(position)
-
-
-        for position in possible_safe_positions:
-            initial_position_contents = self.get_piece(king_position)
-            final_position_contents = self.get_piece(position)
-
-            self.move_piece(king_position, position)
-
-            king_in_check, _ = self.king_in_check(colour)
-
-            self.remove_piece(king_position)
-            self.remove_piece(position)
-
-            self.insert_piece(initial_position_contents, king_position)
-            self.insert_piece(final_position_contents, position)
-
-            if not king_in_check:
-                return False
+        possible_safe_positions = king_position_contents.get_possible_moves(king_position)
+        if possible_safe_positions:
+            return False
 
         total_intermediate_positions = []
         for attacking_cell in attacking_cells:
@@ -387,7 +358,7 @@ class chess_board:
 
             friendly_piece = self.get_piece(friendly_piece_position)
 
-            if friendly_piece.piece_name == "king":
+            if friendly_piece == king:
                 continue
 
             pinned_piece = self.is_piece_pinned(friendly_piece_position)
@@ -402,12 +373,10 @@ class chess_board:
                 if not valid:
                     continue
 
-                self.move_piece(friendly_piece_position, position)
+                self.remove_piece(friendly_piece_position)
+                self.insert_piece(initial_position_contents, position)
 
                 king_in_check, _ = self.king_in_check(colour)
-
-                self.remove_piece(friendly_piece_position)
-                self.remove_piece(position)
 
                 self.insert_piece(initial_position_contents, friendly_piece_position)
                 self.insert_piece(final_position_contents, position)
@@ -442,6 +411,16 @@ class chess_board:
             return True
         else:
             return False
+
+    def get_cell_colour(self, position):
+
+        row, col = position
+
+        if (row % 2 == 0 and col % 2 == 0) or (row % 2 == 1 and col % 2 == 1):
+            return "dark"
+        else:
+            return "light"
+
 
     def set_board(self):
 
@@ -500,7 +479,7 @@ class chess_board:
                 if cell_contents == None:
                     piece_symbol = " "
                 else:
-                    piece_name = cell_contents.piece_name
+                    piece_name = type(cell_contents).__name__
                     piece_colour = cell_contents.colour
                     piece_symbol = piece_symbols[piece_colour][piece_name]
 

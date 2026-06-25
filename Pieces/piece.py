@@ -5,7 +5,6 @@ class piece:
     def __init__(self, colour, chess_board):
 
         self.colour = colour
-        self.piece_name = self.__class__.__name__
         self.chess_board = chess_board
         self.has_moved = False
 
@@ -38,24 +37,33 @@ class piece:
         initial_position_contents = self.chess_board.get_piece(initial_position)
         final_position_contents = self.chess_board.get_piece(final_position)
 
-        own_king_in_check, _ = self.chess_board.king_in_check(initial_position_contents.colour)
-        if own_king_in_check:
+        self.chess_board.remove_piece(initial_position)
+        self.chess_board.insert_piece(initial_position_contents, final_position)
 
-            self.chess_board.move_piece(initial_position, final_position)
+        king_in_check, _ = self.chess_board.king_in_check(initial_position_contents.colour)
 
-            king_in_check, _ = self.chess_board.king_in_check(initial_position_contents.colour)
+        self.chess_board.insert_piece(initial_position_contents, initial_position)
+        self.chess_board.insert_piece(final_position_contents, final_position)
 
-            self.chess_board.remove_piece(initial_position)
-            self.chess_board.remove_piece(final_position)
-
-            self.chess_board.insert_piece(initial_position_contents, initial_position)
-            self.chess_board.insert_piece(final_position_contents, final_position)
-
-            if king_in_check:
-                return (False, "Invalid move: defend your king!")
+        if king_in_check:
+            return (False, "Invalid move: defend your king!")
 
         return (True, None)
 
+    def get_possible_moves(self, initial_position):
+
+        valid_final_positions = []
+        final_positions_to_check = self.get_moves_to_check(initial_position)
+
+        for position in final_positions_to_check:
+            valid, _ = self.check_move_validity(initial_position, position, True)
+            if valid:
+                valid_final_positions.append(position)
+
+        return valid_final_positions
 
     def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
+        raise NotImplementedError("Override in Subclass")
+
+    def get_moves_to_check(self, initial_position):
         raise NotImplementedError("Override in Subclass")

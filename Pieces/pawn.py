@@ -108,3 +108,28 @@ class pawn(piece):
             return False
         else:
             return True
+
+    def get_moves_to_check(self, initial_position):
+
+        final_positions_to_check = []
+
+        row_i, col_i = initial_position
+
+        row_permutations = (1, 2) if self.colour == "white" else (-1, -2)
+        col_permutations = (-1 ,1)
+
+        for i in row_permutations:
+
+            valid, _ = self.chess_board.check_position_exists([row_i + i, col_i])
+
+            if valid:
+                final_positions_to_check.append([row_i + i, col_i])
+
+        for i in col_permutations:
+
+            valid, _ = self.chess_board.check_position_exists([row_i + row_permutations[0], col_i + i])
+
+            if valid:
+                final_positions_to_check.append([row_i + row_permutations[0], col_i + i])
+
+        return final_positions_to_check

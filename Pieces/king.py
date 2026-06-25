@@ -4,6 +4,10 @@ from Pieces import piece
 
 class king(piece):
 
+    def __init__(self, colour, chess_board):
+        super().__init__(colour, chess_board)
+        self.can_castle_if_valid = False
+
     def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
 
         intermediate_position_list = []
@@ -41,3 +45,25 @@ class king(piece):
             return (False, "Move obstructed (hint: include 'x' to take a piece).", intermediate_position_list)
 
         return (True, None, intermediate_position_list)
+
+    def get_moves_to_check(self, initial_position):
+
+        final_positions_to_check = []
+
+        row_i, col_i = initial_position
+
+        for delta_row in [-1, 0, 1]:
+            for delta_col in [-1, 0, 1]:
+
+                if delta_row == delta_col == 0:
+                    continue
+
+                row_f = row_i + delta_row
+                col_f = col_i + delta_col
+
+                valid, _ = self.chess_board.check_position_exists([row_f, col_f])
+
+                if valid:
+                    final_positions_to_check.append([row_f, col_f])
+
+        return final_positions_to_check
