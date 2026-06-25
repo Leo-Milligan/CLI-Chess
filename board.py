@@ -306,11 +306,10 @@ class chess_board:
 
         row, col = position
 
-        if (row % 2 == 0 and col % 2 == 0) or (row % 2 == 1 and col % 2 == 1):
+        if (row + col) % 2:
             return "dark"
         else:
             return "light"
-
 
     def set_board(self):
 

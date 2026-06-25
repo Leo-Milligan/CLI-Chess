@@ -7,12 +7,29 @@ from textual.containers import Grid
 from textual.widgets import Footer, Header, Static
 from textual.color import Color
 
+piece_symbols = {"white": {"king": "♔",
+                           "queen": "♕",
+                           "rook": "♖",
+                           "bishop": "♗",
+                           "knight": "♘",
+                           "pawn": "♙"
+                           },
+
+                 "black": {"king": "♚",
+                           "queen": "♛",
+                           "rook": "♜",
+                           "bishop": "♝",
+                           "knight": "♞",
+                           "pawn": "♟"}
+                 }
+
 class ChessBoardGrid(Grid):
 
-    def __init__(self, num_rows, num_cols):
+    def __init__(self, board, num_rows, num_cols):
         super().__init__(id = "chess_board_grid")
         self.num_rows = num_rows
         self.num_cols = num_cols
+        self.board = board
 
     def compose(self):
 
@@ -22,7 +39,16 @@ class ChessBoardGrid(Grid):
         for col in range(self.num_cols):
             for row in range(self.num_rows):
 
-                cell = Static(classes="cell")
+                cell_contents = self.board[col][row]
+
+                if cell_contents == None:
+                    piece_symbol = ""
+                else:
+                    piece_name = type(cell_contents).__name__
+                    piece_colour = cell_contents.colour
+                    piece_symbol = piece_symbols[piece_colour][piece_name]
+
+                cell = Static(piece_symbol, classes="cell")
 
                 if (row + col) % 2:
                     cell.styles.background = Color(150, 100, 60)
@@ -45,8 +71,9 @@ class ChessApp(App):
 
         num_rows = self.chess_board.num_rows
         num_cols = self.chess_board.num_cols
+        board = self.chess_board.board
 
-        yield ChessBoardGrid(num_rows, num_cols)
+        yield ChessBoardGrid(board, num_rows, num_cols)
 
     def on_mount(self):
 
