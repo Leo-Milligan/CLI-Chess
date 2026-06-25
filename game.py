@@ -356,21 +356,28 @@ class game:
         kingside_castling = ["o","-","o"]
         queenside_castling = ["o","-","o","-","o"]
 
+        side = None
+
         player_input_lower = [i.lower for i in player_input]
 
-        # rework flag to add check for king or queen
         # then check castling validity
+
+        ########################################################################################################################################
+        ###################### alainn changes ##################################################################################################
+        ########################################################################################################################################
 
         if player_input_lower == kingside_castling:
             castling_flag = True
-            return castling_flag, None
+            side = "kingside"
+            return castling_flag, side, None
         elif player_input_lower == queenside_castling:
             castling_flag = True
-            return castling_flag, None
+            side = "queenside"
+            return castling_flag, side, None
         else:
             castling_flag = False
 
-        return castling_flag, None
+        return castling_flag, side, None
 
     def confirm_user_preferences(self, final_position, take_piece_flag, piece_type_to_move, promotional_piece, en_passant_flag):
 
