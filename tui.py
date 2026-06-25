@@ -7,32 +7,20 @@ from textual.containers import Grid
 from textual.widgets import Footer, Header, Static
 from textual.color import Color
 
-class ChessApp(App, chess_board):
+class ChessBoardGrid(Grid):
 
-    CSS_PATH = "chess_board_cell.tcss"
+    def __init__(self, num_rows, num_cols):
+        super().__init__(id = "chess_board_grid")
+        self.num_rows = num_rows
+        self.num_cols = num_cols
 
     def compose(self):
 
-        yield Header()
-        yield Footer()
+        self.styles.grid_size_columns = self.num_cols
+        self.styles.grid_size_rows = self.num_rows
 
-        with Grid(id = "chess_board_grid"):
-            pass
-
-    def on_mount(self):
-
-        self.title = "CLI Chess"
-        self.sub_title = "Chess in your terminal!"
-
-        self.chess_board = chess_board()
-        self.chess_board.set_board()
-
-        container = self.query_one("#chess_board_grid")
-        container.styles.grid_size_columns = self.chess_board.num_cols
-        container.styles.grid_size_rows = self.chess_board.num_rows
-
-        for col in range(self.chess_board.num_cols):
-            for row in range(self.chess_board.num_rows):
+        for col in range(self.num_cols):
+            for row in range(self.num_rows):
 
                 cell = Static(classes="cell")
 
@@ -41,7 +29,29 @@ class ChessApp(App, chess_board):
                 else:
                     cell.styles.background = Color(210, 195, 180)
 
-                container.mount(cell)
+                yield cell
+
+class ChessApp(App):
+
+    CSS_PATH = "chess_board_cell.tcss"
+
+    def compose(self):
+
+        yield Header()
+        yield Footer()
+
+        self.chess_board = chess_board()
+        self.chess_board.set_board()
+
+        num_rows = self.chess_board.num_rows
+        num_cols = self.chess_board.num_cols
+
+        yield ChessBoardGrid(num_rows, num_cols)
+
+    def on_mount(self):
+
+        self.title = "CLI Chess"
+        self.sub_title = "Chess in your terminal!"
 
 if __name__ == "__main__":
     app = ChessApp()

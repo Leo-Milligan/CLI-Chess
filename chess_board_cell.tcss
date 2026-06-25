@@ -1,8 +1,9 @@
-Grid {
-    margin: 6 40;
+#chess_board_grid {
+     width: 50vw;
+     height: 70vh;
 }
 
 .cell {
-    height: 100%;
-    width: 100%;
+      width: 1fr;
+      height: 1fr;
 }
