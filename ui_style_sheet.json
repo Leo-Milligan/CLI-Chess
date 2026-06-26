@@ -1,0 +1,37 @@
+{
+    "piece_symbols": {
+        "small": {
+            "king": "♔",
+            "queen": "♕",
+            "rook": "♖",
+            "bishop": "♗",
+            "knight": "♘",
+            "pawn": "♙"
+        },
+        "medium": {
+            "king": "",
+            "queen": "",
+            "rook": "",
+            "bishop": "",
+            "knight": "",
+            "pawn": ""
+        },
+        "large": {
+            "king": "",
+            "queen": "",
+            "rook": "",
+            "bishop": "",
+            "knight": "",
+            "pawn": ""
+        }
+    },
+
+    "board_colours":{
+        "default": {
+            "dark_squares_colour": [150, 100, 60],
+            "light_squares_colour": [210, 195, 180],
+            "dark_piece_colour": [0, 0, 0],
+            "light_piece_colour": [255, 255, 255]
+        }
+    }
+}

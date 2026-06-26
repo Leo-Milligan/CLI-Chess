@@ -5,4 +5,5 @@
     width: 1fr;
     height: 1fr;
     content-align: center middle;
+    color: red
 }
