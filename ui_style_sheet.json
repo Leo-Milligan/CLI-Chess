@@ -26,10 +26,10 @@
         }
     },
 
-    "board_colours":{
+    "board_colours": {
         "default": {
-            "dark_squares_colour": [150, 100, 60],
-            "light_squares_colour": [210, 195, 180],
+            "dark_square_colour": [150, 100, 60],
+            "light_square_colour": [210, 195, 180],
             "dark_piece_colour": [0, 0, 0],
             "light_piece_colour": [255, 255, 255]
         }
