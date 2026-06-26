@@ -192,42 +192,77 @@ class chess_board:
 
     def find_rook_to_castle(self, side, colour):
 
-        ## how to get side and colour
+        king_initial_position = self.chess_board.king_position[colour]
+        row_k, col_k = king_initial_position
+
+        num_cols = self.num_cols
+
+        abs_col_delta_ks = abs(num_cols - col_k)
+        abs_col_delta_qs = abs(col_k - num_cols)
+
+        if side == "kingside":
+            for i in range(abs_col_delta_ks):
+                intermediate_position = (row_k, col_k + i + 1)
+                intermediate_contents = self.get_piece(intermediate_position)
+                if type(intermediate_contents) != rook:
+                    continue
+                else:
+                    rook_initial_position = intermediate_position
+                    return rook_initial_position
+            
+        elif side == "queenside":
+            for i in range(abs_col_delta_qs):
+                intermediate_position = (row_k, col_k - 1 - i)
+                intermediate_contents = self.get_piece(intermediate_position)
+                if type(intermediate_contents) != rook:
+                    continue
+                else:
+                    rook_initial_position = intermediate_position 
+                    return rook_initial_position
+
+        return None
+    
+    def can_castle_if_valid(self, colour, position):
 
         king_initial_position = self.chess_board.king_position[colour]
         row_k, col_k = king_initial_position
 
-        if side == "kingside":
-            rook_initial_position = None
-            while rook_initial_position == None:
-                intermediate_position = (row_k, col_k + 1)
-                intermediate_contents = self.get_piece(intermediate_position)
-                if type(intermediate_contents) != rook:
-                    continue
-                else:
-                    rook_initial_position = intermediate_position
-            
-        elif side == "queenside":
-            rook_initial_position = None
-            while rook_initial_position == None:
-                intermediate_position = (row_k, col_k - 1)
-                intermediate_contents = self.get_piece(intermediate_position)
-                if type(intermediate_contents) != rook:
-                    continue
-                else:
-                    rook_initial_position = intermediate_position
+        rook_initial_position = position
+        row_r, col_r = rook_initial_position
 
-        return rook_initial_position
-    
-    def update_can_castle_flags(self, colour):
+        king_initial_position_contents = self.get_piece(king_initial_position)
+        if type(king_initial_position_contents) != king:
+            return False
+        elif king_initial_position_contents.has_moved:
+            return False
+        
+        rook_initial_position_contents = self.get_piece(rook_initial_position)
+        if type(rook_initial_position_contents) != rook:
+            return False
+        elif rook_initial_position_contents.has_moved:
+            return False
 
-        # 
+        if row_k != row_r:
+            return False
+        
+        abs_col_delta = abs(col_k-col_r)
+        if abs_col_delta < 3:
+            return False
+        
+        return True
+        
+    def update_castle_flag(self, colour):
 
-        pass
+        positions = self.piece_positions[colour]
 
+        for pos in positions:
+            for piece in positions[pos]:
+
+                if piece == rook:
+                    valid = self.can_castle_if_valid(self, colour, pos)
+                    piece.can_castle_is_valid = valid
+        
     def check_castle_validity(self, side, colour):
-
-        ## how to get side and colour
 
         king_initial_position = self.chess_board.king_position[colour]
         row_k, col_k = king_initial_position
@@ -235,67 +270,68 @@ class chess_board:
         rook_initial_position = self.find_rook_to_castle(side, colour)        
         row_r, col_r = rook_initial_position
 
-        valid, error = self.check_position_exists(king_initial_position)
-        if valid == False:
-            raise ValueError(error)
-
-        valid, error = self.check_position_exists(rook_initial_position)
-        if valid == False:
-            raise ValueError(error)
-
-        king_initial_position_contents = self.get_piece(king_initial_position)
-        if type(king_initial_position_contents) != king:
-            return (False, "No king in expected position.")
-        elif king_initial_position_contents.has_moved:
-            return (False, "King has already moved.")
-        
         rook_initial_position_contents = self.get_piece(rook_initial_position)
-        if type(rook_initial_position_contents) != rook:
-            return (False, "No rook in expected position.")
-        elif rook_initial_position_contents.has_moved:
-            return (False, "Rook has already moved.")
-        
-        if row_k != row_r:
-            return (False, "King and rook must be in the same row to castle.")
+
+        if not rook_initial_position_contents.can_castle_if_valid:
+            return False
         
         abs_col_delta = abs(col_k-col_r)
-        if abs_col_delta <= 3:
-            return (False, "King and rook must be at least three columns apart.")
-        
+
+        self.remove_piece(rook_initial_position)
+
         if side == "kingside":
-            for i in abs_col_delta - 1: 
+
+            for i in range(abs_col_delta - 1): 
                 intermediate_position = (row_k, col_k + i + 1)
                 intermediate_contents = self.get_piece(intermediate_position)
                 if intermediate_contents:
-                    return (False, "Castle blocked.")
+                    return False
+            
+            king_positions = [(row_k, col_k+1), (row_k, col_k+2)]
+            for position in king_positions:
+                if self.is_square_attacked(position):
+                    return False
+                
         elif side == "queenside":
-            for i in abs_col_delta - 1: 
+
+            for i in range(abs_col_delta - 1): 
                 intermediate_position = (row_k, col_k - i + 1)
                 intermediate_contents = self.get_piece(intermediate_position)
                 if intermediate_contents:
-                    return (False, "Castle blocked.")
+                    return False
+                
+            king_positions = [(row_k, col_k-1), (row_k, col_k-2)]
+            for position in king_positions:
+                if self.is_square_attacked(position):
+                    return False
+            
+        self.insert_piece(rook_initial_position_contents, rook_initial_position)
+
+        return True
 
     def move_piece_with_castle(self, side, colour):
 
         ## where to get side and colour
 
         king_initial_position = self.chess_board.king_position[colour]
-        rook_initial_position = self.find_rook_to_castle(side, colour)        
+        rook_initial_position = self.find_rook_to_castle(side, colour)   
+
+        # maybe here call check validity     
 
         row, col = king_initial_position
 
         if side == "kingside":
 
-            king_final_position = [(row+2), col]
-            rook_final_position = [(row+1), col]
+            king_final_position = [row, col+2]
+            rook_final_position = [row, col+1]
 
             self.move_piece(king_initial_position, king_final_position)
             self.move_piece(rook_initial_position, rook_final_position)
 
         elif side == "queenside":
 
-            king_final_position = [(row-2), col]
-            rook_final_position = [(row-1), col]
+            king_final_position = [row, col-2]
+            rook_final_position = [row, col-1]
 
             self.move_piece(king_initial_position, king_final_position)
             self.move_piece(rook_initial_position, rook_final_position)

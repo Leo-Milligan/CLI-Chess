@@ -4,10 +4,6 @@ from Pieces import piece
 
 class king(piece):
 
-    def __init__(self, colour, chess_board):
-        super().__init__(colour, chess_board)
-        self.can_castle_if_valid = False
-
     def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
 
         intermediate_position_list = []
