@@ -492,7 +492,10 @@ class game:
 
         return (take_piece_flag, promotional_piece, abort_move)
 
-    def get_move_delta(self, initial_position, final_position, move_delta):
+    def get_move_delta(self, move_information, move_delta):
+
+        initial_position = move_information["initial_position"]
+        final_position = move_information["final_position"]
 
         initial_position_contents = self.chess_board.get_piece(initial_position)
         final_position_contents = self.chess_board.get_piece(final_position)
@@ -537,7 +540,10 @@ class game:
 
         return move_delta
 
-    def get_move_delta_en_passant(self, initial_position, final_position, move_delta):
+    def get_move_delta_en_passant(self, move_information, move_delta):
+
+        initial_position = move_information["initial_position"]
+        final_position = move_information["final_position"]
 
         initial_position_contents = self.chess_board.get_piece(initial_position)
         final_position_contents = self.chess_board.get_piece(final_position)
@@ -592,19 +598,19 @@ class game:
             print("This is where we should call the castle move function")
 
         elif move_information["piece_type_to_move"] == pawn and move_information["promotional_piece"]:
-            move_delta_initial = self.get_move_delta(move_information["initial_position"], move_information["final_position"], None)
+            move_delta_initial = self.get_move_delta(move_information, None)
             self.chess_board.move_piece_with_promotion( move_information["initial_position"], move_information["final_position"], move_information["promotional_piece"])
-            move_delta = self.get_move_delta(move_information["initial_position"], move_information["final_position"], move_delta_initial)
+            move_delta = self.get_move_delta(move_information, move_delta_initial)
 
         elif move_information["piece_type_to_move"] == pawn and move_information["en_passant_flag"]:
-            move_delta_initial = self.get_move_delta_en_passant(move_information["initial_position"], move_information["final_position"], None)
+            move_delta_initial = self.get_move_delta_en_passant(move_information, None)
             self.chess_board.move_piece_with_en_passant(move_information["initial_position"], move_information["final_position"])
-            move_delta = self.get_move_delta_en_passant(move_information["initial_position"], move_information["final_position"], move_delta_initial)
+            move_delta = self.get_move_delta_en_passant(move_information, move_delta_initial)
 
         else:
-            move_delta_initial = self.get_move_delta(move_information["initial_position"], move_information["final_position"], None)
+            move_delta_initial = self.get_move_delta(move_information, None)
             self.chess_board.move_piece(move_information["initial_position"], move_information["final_position"])
-            move_delta = self.get_move_delta(move_information["initial_position"], move_information["final_position"], move_delta_initial)
+            move_delta = self.get_move_delta(move_information, move_delta_initial)
 
         return move_delta
 
