@@ -251,16 +251,24 @@ class chess_board:
         
         return True
         
-    def update_castle_flag(self, colour):
+    def update_castle_flag(self):
 
-        positions = self.piece_positions[colour]
+        positions_white = self.piece_positions["white"]
+        positions_black = self.piece_positions["black"]
 
-        for pos in positions:
-            for piece in positions[pos]:
+        for pos in positions_white:
+            for piece in positions_white[pos]:
 
                 if piece == rook:
-                    valid = self.can_castle_if_valid(self, colour, pos)
-                    piece.can_castle_is_valid = valid
+                    valid = self.can_castle_if_valid(self, "white", pos)
+                    piece.can_castle_if_valid = valid
+
+        for pos in positions_black:
+            for piece in positions_black[pos]:
+
+                if piece == rook:
+                    valid = self.can_castle_if_valid(self, "black", pos)
+                    piece.can_castle_if_valid = valid
         
     def check_castle_validity(self, side, colour):
 
@@ -311,12 +319,8 @@ class chess_board:
 
     def move_piece_with_castle(self, side, colour):
 
-        ## where to get side and colour
-
         king_initial_position = self.chess_board.king_position[colour]
-        rook_initial_position = self.find_rook_to_castle(side, colour)   
-
-        # maybe here call check validity     
+        rook_initial_position = self.find_rook_to_castle(side, colour)     
 
         row, col = king_initial_position
 
@@ -378,7 +382,7 @@ class chess_board:
         possible_safe_positions = king_position_contents.get_possible_moves(king_position)
         if possible_safe_positions:
             return False
-
+        
         total_intermediate_positions = []
         for attacking_cell in attacking_cells:
 
