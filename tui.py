@@ -5,7 +5,7 @@ from game import game
 
 from textual import on
 from textual.app import App
-from textual.containers import Grid
+from textual.containers import Grid, HorizontalGroup
 from textual.widgets import Static, Input, Label, Footer
 from textual.color import Color
 from textual.reactive import reactive
@@ -77,6 +77,10 @@ class ChessBoardGrid(Grid):
                 cell.populate_cell()
                 yield cell
 
+    def update_board(self):
+        for cell in self.query(Cell):
+            cell.populate_cell()
+
 class ChessApp(App):
 
     CSS_PATH = "chess_board_cell.tcss"
@@ -99,7 +103,11 @@ class ChessApp(App):
         board_colour = "default"
 
         yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour)
-        yield Input(compact = True)
+
+        with HorizontalGroup():
+            yield Label("Enter Move: ", id = "command_line_prompt")
+            yield Input(compact = True, id = "command_line")
+
 
     @on(Input.Submitted)
     def handle_user_input(self):
@@ -111,9 +119,20 @@ class ChessApp(App):
         if not move_information["valid"]:
             command_line.value = ""
             return
-        elif move_information["valid"]:
-            command_line.value = ""
-            return
+
+        result = self.game.apply_move(move_information)
+
+        chess_board = self.query_one(ChessBoardGrid)
+        chess_board.update_board()
+
+        if result["checkmate"]:
+            self.mount(Label("Checkmate!"))
+        elif result["draw"]:
+            self.mount(Label("Draw!"))
+        elif result["check"]:
+            self.mount(Label("Check"))
+
+        command_line.value = ""
 
 if __name__ == "__main__":
     app = ChessApp()

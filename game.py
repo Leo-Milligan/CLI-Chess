@@ -31,6 +31,55 @@ class game:
 
         self.chess_board = chess_board
 
+    def apply_move(self, move_information):
+
+        result = {"check": False, "checkmate": False, "draw": False, "message": None}
+
+        move_delta = self.move_controller(move_information)
+        self.move_history.append(move_delta)
+
+        self.move_number += 1
+
+        if move_delta["captured_piece_information"]["captured_piece"]:
+            if self.turn_colour == "white":
+                self.captured_black_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
+            else:
+                self.captured_white_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
+
+        position_overview = self.get_position_overview()
+
+        self.update_counters_for_draw(move_information, position_overview)
+
+        check, _ = self.chess_board.king_in_check(self.opposite_colour)
+        result["check"] = check
+        result["message"] = print(f"{self.opposite_colour} king in check!")
+
+        if check:
+            checkmate = self.chess_board.king_in_checkmate(self.opposite_colour)
+        else:
+            checkmate = False
+
+        result["checkmate"] = checkmate
+
+        if checkmate:
+            result["message"] = print(f"{self.opposite_colour} king in checkmate!")
+            self.winner = self.turn_colour
+            return result
+
+        is_draw, message = self.check_for_draw(self.turn_colour)
+        result["draw"], result["message"] = is_draw, message
+        if is_draw:
+            return result
+
+        for position in self.chess_board.piece_positions[self.opposite_colour]:
+            piece = self.chess_board.get_piece(position)
+            if type(piece) == pawn:
+                piece.en_passant_vulnerable_flag = False
+
+        self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
+
+        return result
+
     def game_loop(self):
         self.chess_board.show_board()
 
