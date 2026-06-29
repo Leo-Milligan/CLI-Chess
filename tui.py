@@ -3,6 +3,7 @@
 from board import chess_board
 from game import game
 
+from asyncio import sleep
 from textual import on
 from textual.app import App
 from textual.containers import Grid, HorizontalGroup
@@ -108,9 +109,11 @@ class ChessApp(App):
             yield Label("Enter Move: ", id = "command_line_prompt")
             yield Input(compact = True, id = "command_line")
 
+        yield Label(id = "message_line")
+
 
     @on(Input.Submitted)
-    def handle_user_input(self):
+    async def handle_user_input(self):
 
         command_line = self.query_one(Input)
         player_input = list(command_line.value.strip(" +#!?"))
@@ -118,6 +121,7 @@ class ChessApp(App):
 
         if not move_information["valid"]:
             command_line.value = ""
+            await self.display_message(move_information["error"])
             return
 
         result = self.game.apply_move(move_information)
@@ -133,6 +137,15 @@ class ChessApp(App):
             self.mount(Label("Check"))
 
         command_line.value = ""
+
+    async def display_message(self, message):
+
+        message_line = self.query_one("#message_line", Label)
+        message_line.update(message)
+        await sleep(2.5)
+        message_line.update("")
+
+
 
 if __name__ == "__main__":
     app = ChessApp()
