@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from board import chess_board
 from Pieces import *
 
 piece_mapping = {"K": king,
@@ -751,9 +750,3 @@ class game:
                 return True
 
         return False
-
-
-chess_board = chess_board()
-chess_board.set_board()
-chess_game = game(chess_board)
-chess_game.game_loop()
