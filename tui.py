@@ -7,7 +7,7 @@ from asyncio import sleep
 from textual import on
 from textual.app import App
 from textual.containers import Grid, HorizontalGroup
-from textual.widgets import Static, Input, Label, Footer
+from textual.widgets import Static, Input, Label
 from textual.color import Color
 from textual.reactive import reactive
 
@@ -28,11 +28,9 @@ class Cell(Static):
 
     def colour_cell(self):
         if (self.row + self.col) % 2:
-            r,g,b = ui_style_sheet["board_colours"][self.board_colour]["dark_square_colour"]
-            self.styles.background = Color(r, g, b)
+            self.styles.background = Color.parse(ui_style_sheet["board_colours"][self.board_colour]["dark_square_colour"])
         else:
-            r,g,b = ui_style_sheet["board_colours"][self.board_colour]["light_square_colour"]
-            self.styles.background = Color(r, g, b)
+            self.styles.background = Color.parse(ui_style_sheet["board_colours"][self.board_colour]["light_square_colour"])
 
     def populate_cell(self):
 
@@ -49,11 +47,9 @@ class Cell(Static):
         self.update(piece_symbol)
 
         if piece_colour == "black":
-            r,g,b = ui_style_sheet["board_colours"][self.board_colour]["dark_piece_colour"]
-            self.styles.color = Color(r, g, b)
+            self.styles.color = Color.parse(ui_style_sheet["board_colours"][self.board_colour]["dark_piece_colour"])
         elif piece_colour == "white":
-            r,g,b = ui_style_sheet["board_colours"][self.board_colour]["light_piece_colour"]
-            self.styles.color = Color(r, g, b)
+            self.styles.color = Color.parse(ui_style_sheet["board_colours"][self.board_colour]["light_piece_colour"])
 
 class ChessBoardGrid(Grid):
 
@@ -82,6 +78,13 @@ class ChessBoardGrid(Grid):
         for cell in self.query(Cell):
             cell.populate_cell()
 
+class TurnLabel(Label):
+
+    turn_colour = reactive("white")
+
+    def watch_turn_colour(self):
+        self.update(f" {"W" if self.turn_colour == "white" else "B"} | ")
+
 class ChessApp(App):
 
     CSS_PATH = "chess_board_cell.tcss"
@@ -105,15 +108,17 @@ class ChessApp(App):
 
         yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour)
 
-        with HorizontalGroup():
+        with HorizontalGroup(id = "status_bar"):
+            yield TurnLabel()
             yield Label("Enter Move: ", id = "command_line_prompt")
             yield Input(compact = True, id = "command_line")
 
         yield Label(id = "message_line")
 
-
     @on(Input.Submitted)
     async def handle_user_input(self):
+
+        self.clear_message()
 
         command_line = self.query_one(Input)
         player_input = list(command_line.value.strip(" +#!?"))
@@ -129,12 +134,10 @@ class ChessApp(App):
         chess_board = self.query_one(ChessBoardGrid)
         chess_board.update_board()
 
-        if result["checkmate"]:
-            self.mount(Label("Checkmate!"))
-        elif result["draw"]:
-            self.mount(Label("Draw!"))
-        elif result["check"]:
-            self.mount(Label("Check"))
+        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+
+        if result["message"]:
+            await self.display_message(result["message"])
 
         command_line.value = ""
 
@@ -142,10 +145,12 @@ class ChessApp(App):
 
         message_line = self.query_one("#message_line", Label)
         message_line.update(message)
-        await sleep(2.5)
+
+        self.set_timer(2.5, self.clear_message)
+
+    def clear_message(self):
+        message_line = self.query_one("#message_line", Label)
         message_line.update("")
-
-
 
 if __name__ == "__main__":
     app = ChessApp()

@@ -33,7 +33,7 @@ class game:
 
     def apply_move(self, move_information):
 
-        result = {"check": False, "checkmate": False, "draw": False, "message": None}
+        result = {"check": False, "checkmate": False, "draw": False, "message": ""}
 
         move_delta = self.move_controller(move_information)
         self.move_history.append(move_delta)
@@ -52,9 +52,9 @@ class game:
 
         check, _ = self.chess_board.king_in_check(self.opposite_colour)
         result["check"] = check
-        result["message"] = print(f"{self.opposite_colour} king in check!")
 
         if check:
+            result["message"] = f"{self.opposite_colour} king in check!"
             checkmate = self.chess_board.king_in_checkmate(self.opposite_colour)
         else:
             checkmate = False
@@ -62,7 +62,7 @@ class game:
         result["checkmate"] = checkmate
 
         if checkmate:
-            result["message"] = print(f"{self.opposite_colour} king in checkmate!")
+            result["message"] = f"{self.opposite_colour} king in checkmate!"
             self.winner = self.turn_colour
             return result
 
