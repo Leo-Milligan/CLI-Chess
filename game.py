@@ -67,8 +67,9 @@ class game:
             return result
 
         is_draw, message = self.check_for_draw(self.turn_colour)
-        result["draw"], result["message"] = is_draw, message
+        result["draw"]= is_draw
         if is_draw:
+            result["message"] = message
             return result
 
         for position in self.chess_board.piece_positions[self.opposite_colour]:
