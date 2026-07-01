@@ -524,7 +524,7 @@ class game:
             move_delta["piece_information_initial"]["piece_flags"]["has_moved"] = initial_position_contents.has_moved
             if type(initial_position_contents) == pawn:
                 move_delta["piece_information_initial"]["piece_flags"]["en_passant_vulnerable_flag"] = initial_position_contents.en_passant_vulnerable_flag
-            elif type(initial_position_contents) == rook or type(initial_position_contents) == king:
+            elif type(initial_position_contents) == rook:
                 move_delta["piece_information_initial"]["piece_flags"]["can_castle_if_valid"] = initial_position_contents.can_castle_if_valid
 
             if final_position_contents:
@@ -548,7 +548,7 @@ class game:
             move_delta["piece_information_final"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
             if type(initial_position_contents) == pawn:
                 move_delta["piece_information_final"]["piece_flags"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
-            elif type(initial_position_contents) == rook or type(initial_position_contents) == king:
+            elif type(initial_position_contents) == rook:
                 move_delta["piece_information_initial"]["piece_flags"]["can_castle_if_valid"] = initial_position_contents.can_castle_if_valid
 
         return move_delta
@@ -578,7 +578,7 @@ class game:
             move_delta["piece_information_initial"]["piece_flags"]["has_moved"] = initial_position_contents.has_moved
             if type(initial_position_contents) == pawn:
                 move_delta["piece_information_initial"]["piece_flags"]["en_passant_vulnerable_flag"] = initial_position_contents.en_passant_vulnerable_flag
-            elif type(initial_position_contents) == rook or type(initial_position_contents) == king:
+            elif type(initial_position_contents) == rook:
                 move_delta["piece_information_initial"]["piece_flags"]["can_castle_if_valid"] = initial_position_contents.can_castle_if_valid
 
             _, col_i = initial_position
@@ -606,7 +606,7 @@ class game:
             move_delta["piece_information_final"]["piece_flags"]["has_moved"] = final_position_contents.has_moved
             if type(initial_position_contents) == pawn:
                 move_delta["piece_information_final"]["piece_flags"]["en_passant_vulnerable_flag"] = final_position_contents.en_passant_vulnerable_flag
-            elif type(initial_position_contents) == rook or type(initial_position_contents) == king:
+            elif type(initial_position_contents) == rook:
                 move_delta["piece_information_initial"]["piece_flags"]["can_castle_if_valid"] = initial_position_contents.can_castle_if_valid
 
         return move_delta
