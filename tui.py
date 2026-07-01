@@ -94,6 +94,8 @@ class ChessApp(App):
         super().__init__()
         self.chess_board = chess_board()
         self.game = game(self.chess_board)
+        self.pending_question_information = None
+        self.cached_move_information = None
 
     def compose(self):
 
@@ -115,6 +117,11 @@ class ChessApp(App):
 
         yield Label(id = "message_line")
 
+    def on_mount(self):
+
+        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+
+
     @on(Input.Submitted)
     async def handle_user_input(self):
 
@@ -122,12 +129,28 @@ class ChessApp(App):
 
         command_line = self.query_one(Input)
         player_input = list(command_line.value.strip(" +#!?"))
-        move_information = self.game.interperet_move_notation(player_input)
+        command_line.value = ""
+
+        if self.pending_question_information:
+            move_information = self.game.interperate_user_preferences_answer(player_input, self.cached_move_information, self.pending_question_information)
+        else:
+            move_information = self.game.interperet_move_notation(player_input)
 
         if not move_information["valid"]:
-            command_line.value = ""
-            await self.display_message(move_information["error"])
+            if move_information.get("error") is not None:
+                await self.display_message(move_information["error"])
             return
+
+        question_information = self.game.get_user_preferences_question(move_information)
+        if question_information:
+            self.query_one("#command_line_prompt", Label).update(question_information["question"])
+            self.pending_question_information = question_information
+            self.cached_move_information = move_information
+            return
+        else:
+            self.query_one("#command_line_prompt", Label).update("Enter Move: ")
+            self.pending_question_information = None
+            self.cached_move_information = None
 
         result = self.game.apply_move(move_information)
 
@@ -138,8 +161,6 @@ class ChessApp(App):
 
         if result["message"]:
             await self.display_message(result["message"])
-
-        command_line.value = ""
 
     async def display_message(self, message):
 
