@@ -95,7 +95,7 @@ class game:
 
             self.move_history.append(move_delta)
 
-            if move_delta["captured_piece_information"]["captured_piece"]:
+            if move_delta["captured_piece_flag"]:
                 if self.turn_colour == "white":
                     self.captured_black_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
                 else:
@@ -145,7 +145,7 @@ class game:
         if error:
             return {"valid": False, "error": error}
         if castling_flag:
-            return {"valid": True, "castling_flag": True, "side": side}
+            return {"valid": True, "castling_flag": True, "side": side, "resign": False, "draw_offer": False}
 
         promotional_piece, remainder, error = self.get_promotional_piece(player_input)
         if error:
@@ -402,12 +402,12 @@ class game:
 
     def check_for_castling(self, player_input):
 
-        kingside_castling = ["o","-","o"]
-        queenside_castling = ["o","-","o","-","o"]
+        kingside_castling = ['o','-','o']
+        queenside_castling = ['o','-','o','-','o']
 
         side = None
 
-        player_input_lower = [i.lower for i in player_input]
+        player_input_lower = [i.lower() for i in player_input]
 
         if player_input_lower == kingside_castling:
             castling_flag = True
@@ -415,14 +415,14 @@ class game:
             if self.chess_board.check_castle_validity(side, self.turn_colour):
                 return castling_flag, side, None
             else:
-                return castling_flag, side, "Castle not valid." 
+                return castling_flag, side, "Castling not valid." 
         elif player_input_lower == queenside_castling:
             castling_flag = True
             side = "queenside"
             if self.chess_board.check_castle_validity(side, self.turn_colour):
                 return castling_flag, side, None
             else:
-                return castling_flag, side, "Castle not valid." 
+                return castling_flag, side, "Castling not valid." 
         else:
             return False, None, None    
 
@@ -611,7 +611,7 @@ class game:
 
         return move_delta
     
-    def get_move_delta_castling(self, move_information):
+    def get_move_delta_castling(self, move_information, move_delta):
 
         if not move_delta:
             move_delta = {"piece_information_initial": {"piece": None, "piece_position": None, "piece_flags": {"has_moved": None, "en_passant_vulnerable_flag": None, "can_castle_if_valid": None}},
@@ -622,13 +622,13 @@ class game:
                         "castling_information": {"side": None, "rook_initial_position": None, "king_initial_position": None},
                         "game_metadata": {"move_number": None, "colour_to_move": None}
                         }
-            
+                        
             move_delta["castling_flag"] = True
             move_delta["castling_information"]["side"] = move_information["side"]
             move_delta["castling_information"]["king_initial_position"] = list(self.chess_board.king_positions[self.turn_colour])
-            move_delta["castling_information"]["rook_initial_position"] = list(self.chess_board.find_rook_to_castle(self.turn_colour, move_information["side"]))
+            move_delta["castling_information"]["rook_initial_position"] = list(self.chess_board.find_rook_to_castle(move_information["side"], self.turn_colour))
 
-            return move_delta
+        return move_delta
   
     def move_controller(self, move_information):
 
@@ -681,14 +681,18 @@ class game:
 
     def update_counters_for_draw(self, move_information, position_overview):
 
-            if move_information["take_piece_flag"]:
+            if move_information["castling_flag"]:
+                self.moves_since_capture_or_pawn_move += 1
+            elif move_information["take_piece_flag"]:
                 self.moves_since_capture_or_pawn_move = 0
             elif move_information["piece_type_to_move"] == pawn:
                 self.moves_since_capture_or_pawn_move = 0
             else:
                 self.moves_since_capture_or_pawn_move += 1
 
-            if move_information["take_piece_flag"]:
+            if move_information["castling_flag"]:
+                self.position_history_for_draw_viability = []
+            elif move_information["take_piece_flag"]:
                 self.position_history_for_draw_viability = []
             elif move_information["piece_type_to_move"] == pawn:
                 self.position_history_for_draw_viability = []
