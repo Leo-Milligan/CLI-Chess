@@ -256,226 +256,64 @@ class game:
         return prompt
 
     def interperate_user_preferences_answer(self, player_input, move_information, question_information):
-        return
 
-    # def game_loop_legacy(self):
-    #     self.chess_board.show_board()
-
-    #     position_overview = self.get_position_overview
-    #     self.position_history_for_draw_viability.append(position_overview)
-
-    #     while True:
-    #         if self.draw_offered == True:
-    #             self.draw_offered = False
-
-    #             while True:
-    #                 draw_response = input("Opponent has offered a draw. Do you wish to accept it (y/n): ").strip()
-    #                 if draw_response in ("y", "n"):
-    #                     break
-
-    #             if draw_response == "y":
-    #                 print("Game ends in a draw!")
-    #                 self.draw = True
-    #                 break
-
-    #             elif draw_response == "n":
-    #                 self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
-    #                 continue
-
-    #         while True:
-    #             player_input = list(input("Enter move: ").strip(" +#!?"))
-
-    #             move_information = self.interperet_move_notation(player_input)
-
-    #             if not move_information["valid"]:
-    #                 if move_information["error"]:
-    #                     print(move_information["error"])
-
-    #             break
-
-    #         if move_information["resign"] == True:
-    #             print(f"{self.turn_colour} resigns!")
-    #             self.game_resigned = True
-    #             self.winner = self.opposite_colour
-    #             break
-
-    #         if move_information["draw_offer"] == True:
-    #             self.draw_offered = True
-
-    #             if self.immediate_draw_possible:
-
-    #                 if self.moves_since_capture_or_pawn_move >= 50:
-    #                     print("Draw due to there being no pawn moves or piece captures within the last 50 moves.")
-
-    #                 self.draw = True
-    #                 break
-
-    #             self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
-
-    #             continue
-
-    #         move_delta = self.move_controller(move_information)
-    #         self.move_number += 1
-    #         self.chess_board.show_board()
-
-    #         self.move_history.append(move_delta)
-
-    #         if move_delta["captured_piece_information"]["captured_piece"]:
-    #             if self.turn_colour == "white":
-    #                 self.captured_black_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
-    #             else:
-    #                 self.captured_white_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
-
-    #         position_overview = self.get_position_overview()
-
-    #         self.update_counters_for_draw(move_information, position_overview)
-
-    #         check, _ = self.chess_board.king_in_check(self.opposite_colour)
-
-    #         if check:
-    #             print(f"{self.opposite_colour} king in check!")
-    #             checkmate = self.chess_board.king_in_checkmate(self.opposite_colour)
-    #         else:
-    #             checkmate = False
-
-    #         if checkmate:
-    #             self.winner = self.turn_colour
-    #             print(f"{self.opposite_colour} king in checkmate!")
-    #             break
-
-    #         is_draw, message = self.check_for_draw(self.turn_colour)
-    #         if is_draw:
-    #             print(message)
-    #             break
-
-    #         for position in self.chess_board.piece_positions[self.opposite_colour]:
-    #             piece = self.chess_board.get_piece(position)
-    #             if type(piece) == pawn:
-    #                 piece.en_passant_vulnerable_flag = False
-
-    #         self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
-
-    # def interperet_move_notation_legacy(self, player_input):
-
-    #     if len(player_input) == 1 and player_input[0].lower() == "r":
-    #         return {"valid": True, "resign": True, "draw_offer": False}
-
-    #     if len(player_input) == 1 and player_input[0].lower() == "d":
-    #         return {"valid": True, "resign": False, "draw_offer": True}
-
-    #     if len(player_input) < 2:
-    #         return {"valid": False, "error": "Move patterns must be at least two characters long."}
-
-    #     castling_flag, error = self.check_for_castling(player_input)
-    #     if error:
-    #         return {"valid": False, "error": error}
-    #     if castling_flag:
-    #         return {"valid": True, "castling_flag": True}
-
-    #     promotional_piece, remainder, error = self.get_promotional_piece(player_input)
-    #     if error:
-    #         return {"valid": False, "error": error}
-
-    #     take_piece_flag, remainder = self.get_take_piece_flag(remainder)
-
-    #     final_position, remainder, error = self.find_final_position(remainder)
-    #     if not final_position:
-    #         return {"valid": False, "error": error}
-
-    #     piece_type_to_move, remainder = self.get_piece_type_from_input(remainder)
-
-    #     initial_row, initial_col, error = self.get_ambiguity_clues(remainder)
-    #     if error:
-    #         return {"valid": False, "error": error}
-
-    #     initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position)
-    #     if not initial_position:
-    #         if error:
-    #             return {"valid": False, "error": error}
-    #         elif not error:
-    #             return {"valid": False, "error": None}
-
-    #     if piece_type_to_move == pawn:
-    #         initial_position_contents = self.chess_board.get_piece(initial_position)
-    #         en_passant_flag = initial_position_contents.get_en_passant_flag(initial_position, final_position, True)
-    #     else:
-    #         en_passant_flag = False
-
-    #     take_piece_flag, promotional_piece, abort_move = self.confirm_user_preferences(final_position, take_piece_flag, piece_type_to_move, promotional_piece, en_passant_flag)
-    #     if abort_move == True:
-    #         return {"valid": False, "error": None}
-
-    #     return {"valid": True, "resign": False, "draw_offer": False, "initial_position": initial_position, "final_position": final_position, "take_piece_flag": take_piece_flag, "piece_type_to_move": piece_type_to_move, "promotional_piece": promotional_piece, "castling_flag": castling_flag, "en_passant_flag": en_passant_flag}
-
-    # def find_initial_position_legacy(self, piece_type_to_move, initial_row, initial_col, final_position):
-
-    #     possible_positions = []
-    #     for key in self.chess_board.piece_positions[self.turn_colour]:
-
-    #         if initial_row is not None and key[0] != initial_row:
-    #             continue
-    #         elif initial_col is not None and key[1] != initial_col:
-    #             continue
-
-    #         cell_contents = self.chess_board.piece_positions[self.turn_colour][key]
-
-    #         if type(cell_contents) == piece_type_to_move:
-    #             possible_positions.append(list(key))
-
-    #     if len(possible_positions) == 0:
-    #         return (None, f"There are no {self.turn_colour} {piece_type_to_move.__name__}s on the board.")
-
-    #     for i in possible_positions.copy():
-
-    #         cell_contents = self.chess_board.get_piece(i)
-
-    #         valid, _ = cell_contents.check_move_validity(i, final_position, True)
-
-    #         if valid == False:
-    #             possible_positions.remove(i)
-
-    #     if len(possible_positions) == 0:
-    #         return (None, f"No {self.turn_colour} {piece_type_to_move.__name__}s can make this move.")
-
-    #     if len(possible_positions) == 1:
-    #         return (possible_positions[0], None)
-
-    #     initial_position = self.remove_piece_ambiguity(possible_positions, piece_type_to_move)
-    #     if initial_position == None:
-    #         return (None, None)
-
-    #     return (initial_position, None)
-
-    # def remove_piece_ambiguity(self, possible_initial_positions, piece_type_to_move):
-
-    #     possible_positions_chess_notation = []
-    #     for position in possible_initial_positions:
-    #         position_chess_notation = self.coordinate_to_chess_notation(position)
-    #         possible_positions_chess_notation.append(position_chess_notation)
-
-    #     prompt = f"Move is ambiguous. Do you mean the {piece_type_to_move.__name__} at {possible_positions_chess_notation[0]} (0)"
-
-    #     for i in range(len(possible_initial_positions[1:])):
-    #         string_snippet = f" or at {possible_positions_chess_notation[i + 1]} ({i + 1})"
-    #         prompt += string_snippet
-
-    #     prompt += " or press (x) to re-enter move: "
-
-    #     while True:
-    #         user_choice = input(prompt).strip().lower()
-    #         if user_choice == "x":
-    #             break
-    #         if user_choice.isdigit():
-    #             user_choice = int(user_choice)
-    #             if 0 <= user_choice <= (len(possible_initial_positions) - 1):
-    #                 break
-
-    #     if user_choice == "x":
-    #         return None
-
-    #     initial_position = possible_initial_positions[user_choice]
-
-    #     return initial_position
+        player_input = player_input.lower()
+
+        if question_information["question_id"] ==  "piece_ambiguity":
+            possible_initial_positions = move_information["initial_position"]
+
+            if player_input == "x":
+                move_information["valid"] = False
+
+            try:
+                int(player_input)
+            except:
+                return move_information
+
+            if 0 <= int(player_input) <= (len(possible_initial_positions) - 1):
+                initial_position = possible_initial_positions[int(player_input)]
+                move_information["initial_position"] = initial_position
+
+                if move_information["piece_type_to_move"] == pawn:
+                    initial_position_contents = self.chess_board.get_piece(move_information["initial_position"])
+                    move_information["en_passant_flag"] = initial_position_contents.get_en_passant_flag(move_information["initial_position"], move_information["final_position"], True)
+                else:
+                    move_information["en_passant_flag"] = False
+
+        elif question_information["question_id"] ==  "take_piece":
+            if player_input == "y":
+                move_information["take_piece_flag"] = True
+            elif player_input == "n":
+                move_information["valid"] = False
+
+        elif question_information["question_id"] ==  "take_en_passant":
+            if player_input == "y":
+                move_information["take_piece_flag"] = True
+            elif player_input == "n":
+                move_information["valid"] = False
+
+        elif question_information["question_id"] ==  "move_without_take":
+            if player_input == "y":
+                move_information["take_piece_flag"] = False
+            elif player_input == "n":
+                move_information["valid"] = False
+
+        elif question_information["question_id"] ==  "skip_promotion":
+            if player_input == "y":
+                move_information["promotional_piece"] = None
+            elif player_input == "n":
+                move_information["valid"] = False
+
+        elif question_information["question_id"] ==  "confirm_promotion":
+            keys = list(piece_mapping.keys())
+            keys_excluding_pawn_and_king = [k for k in keys if k not in ("K", "P")]
+
+            if player_input in keys_excluding_pawn_and_king:
+                move_information["promotional_piece"] = piece_mapping[player_input]
+            elif player_input == "x":
+                move_information["valid"] = False
+
+        return move_information
 
     def coordinate_to_chess_notation(self, positon):
 
@@ -643,79 +481,6 @@ class game:
             castling_flag = False
 
         return castling_flag, None
-
-    # def confirm_user_preferences(self, final_position, take_piece_flag, piece_type_to_move, promotional_piece, en_passant_flag):
-
-    #     abort_move = False
-
-    #     final_position_contents = self.chess_board.get_piece(final_position)
-
-    #     if final_position_contents and final_position_contents != self.turn_colour and take_piece_flag == False:
-    #         while True:
-    #             answer = input("Do you want to take the piece (y/n): ").lower().strip()
-
-    #             if answer == "y":
-    #                 take_piece_flag = True
-    #                 break
-    #             if answer == "n":
-    #                 abort_move = True
-    #                 break
-
-    #     if en_passant_flag == True and take_piece_flag == False:
-    #         while True:
-    #             answer = input("Do you want to capture en passant (y/n): ").lower().strip()
-
-    #             if answer == "y":
-    #                 take_piece_flag = True
-    #                 break
-    #             if answer == "n":
-    #                 abort_move = True
-    #                 break
-
-    #     if not final_position_contents and take_piece_flag == True and en_passant_flag == False:
-    #         while True:
-    #             answer = input("The destination square is empty, do you want to continue (y/n): ").lower().strip()
-
-    #             if answer == "y":
-    #                 take_piece_flag = False
-    #                 break
-    #             if answer == "n":
-    #                 abort_move = True
-    #                 break
-
-    #     if self.turn_colour == "white":
-    #         moving_to_last_row = True if final_position[0] == (self.chess_board.num_rows - 1) else False
-    #     else:
-    #         moving_to_last_row = True if final_position[0] == 0 else False
-
-    #     if promotional_piece and (not moving_to_last_row or not piece_type_to_move == pawn):
-    #         promotional_piece = None
-
-    #         while True:
-    #             answer = input("Promoting this piece is not possible, do you want to continue (y/n): ").lower().strip()
-
-    #             if answer == "y":
-    #                 break
-    #             if answer == "n":
-    #                 abort_move = True
-    #                 break
-
-    #     keys = list(piece_mapping.keys())
-    #     keys_excluding_pawn_and_king = [k for k in keys if k not in ("K", "P")]
-
-    #     if piece_type_to_move == pawn and moving_to_last_row and not promotional_piece:
-
-    #         while True:
-    #             answer = input("Promote to Queen (Q), Rook (R), Bishop (B), Knight (N), or press (x) to re-enter move: ").upper().strip()
-
-    #             if answer in keys_excluding_pawn_and_king:
-    #                 promotional_piece = piece_mapping[answer]
-    #                 break
-    #             if answer == "X":
-    #                 abort_move = True
-    #                 break
-
-    #     return (take_piece_flag, promotional_piece, abort_move)
 
     def get_move_delta(self, move_information, move_delta):
 

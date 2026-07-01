@@ -128,17 +128,22 @@ class ChessApp(App):
         self.clear_message()
 
         command_line = self.query_one(Input)
-        player_input = list(command_line.value.strip(" +#!?"))
+        player_input = command_line.value.strip(" +#!?")
         command_line.value = ""
 
         if self.pending_question_information:
             move_information = self.game.interperate_user_preferences_answer(player_input, self.cached_move_information, self.pending_question_information)
         else:
-            move_information = self.game.interperet_move_notation(player_input)
+            move_information = self.game.interperet_move_notation(list(player_input))
 
         if not move_information["valid"]:
+            self.query_one("#command_line_prompt", Label).update("Enter Move: ")
+            self.pending_question_information = None
+            self.cached_move_information = None
+
             if move_information.get("error") is not None:
                 await self.display_message(move_information["error"])
+
             return
 
         question_information = self.game.get_user_preferences_question(move_information)
