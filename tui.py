@@ -3,7 +3,6 @@
 from board import chess_board
 from game import game
 
-from asyncio import sleep
 from textual import on
 from textual.app import App
 from textual.containers import Grid, HorizontalGroup
