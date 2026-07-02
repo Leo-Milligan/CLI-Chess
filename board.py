@@ -115,7 +115,7 @@ class chess_board:
 
         self.piece_positions[piece.colour].update({tuple(position): piece})
 
-        if piece == king:
+        if type(piece) == king:
             self.king_positions.update({piece.colour: tuple(position)})
 
     def get_piece(self, position):
