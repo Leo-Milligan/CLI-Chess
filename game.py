@@ -93,7 +93,17 @@ class game:
 
     def apply_move(self, move_information):
 
-        result = {"check": False, "checkmate": False, "draw": False, "message": ""}
+        result = {"check": False, "checkmate": False, "resign": False, "draw": False, "message": ""}
+
+        if move_information["resign"]:
+            self.winner = self.opposite_colour
+            self.game_resigned = True
+            result["resign"] = True
+            return result
+        elif move_information["draw_offer"] and self.immediate_draw_possible:
+            self.draw = True
+            result["draw"] = True
+            return result
 
         move_delta = self.move_controller(move_information)
         self.chess_board.update_castle_flag()
@@ -179,7 +189,15 @@ class game:
 
     def get_user_preferences_question(self, move_information):
 
-        if move_information["castling_flag"]:
+        if move_information["draw_offer"] and not self.immediate_draw_possible:
+            question_id = "draw_offer"
+            question = "Opponent wants to draw, do you accept? (y/n): "
+            valid_answers = ["y", "n"]
+
+            return {"question_id": question_id, "question": question, "valid_answers": valid_answers}
+
+        if move_information.get("castling_flag") is not False or \
+           move_information.get("resign") is not False:
             return None
 
         final_position_contents = self.chess_board.get_piece(move_information["final_position"])
@@ -188,6 +206,7 @@ class game:
             moving_to_last_row = True if move_information["final_position"][0] == (self.chess_board.num_rows - 1) else False
         else:
             moving_to_last_row = True if move_information["final_position"][0] == 0 else False
+
 
         if type(move_information["initial_position"][0]) != int:
             question_id = "piece_ambiguity"
@@ -263,7 +282,14 @@ class game:
 
         player_input = player_input.lower()
 
-        if question_information["question_id"] ==  "piece_ambiguity":
+        if question_information["question_id"] ==  "draw_offer":
+            if player_input == "y":
+                self.immediate_draw_possible = True
+            elif player_input == "n":
+                move_information["valid"] = False
+                self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
+
+        elif question_information["question_id"] ==  "piece_ambiguity":
             possible_initial_positions = move_information["initial_position"]
 
             if player_input == "x":

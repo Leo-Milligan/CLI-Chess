@@ -6,9 +6,10 @@ from game import game
 from textual import on
 from textual.app import App
 from textual.containers import Grid, HorizontalGroup
-from textual.widgets import Static, Input, Label
+from textual.widgets import Static, Input, Label, Button
 from textual.color import Color
 from textual.reactive import reactive
+from textual.screen import Screen, ModalScreen
 
 import json
 
@@ -84,6 +85,26 @@ class TurnLabel(Label):
     def watch_turn_colour(self):
         self.update(f" {"W" if self.turn_colour == "white" else "B"} | ")
 
+class GameOverScreen(ModalScreen):
+
+    def __init__(self, game_over_message):
+        super().__init__()
+        self.game_over_message = game_over_message
+
+    def compose(self):
+
+        with Grid(id="dialog"):
+            yield Label(self.game_over_message, id="message")
+            yield Button("Quit", variant="error", id="quit")
+            yield Button("Cancel", variant="primary", id="cancel")
+
+    def on_button_pressed(self, event):
+
+        if event.button.id == "quit":
+            self.app.exit()
+        else:
+            self.app.pop_screen()
+
 class ChessApp(App):
 
     CSS_PATH = "chess_board_cell.tcss"
@@ -116,11 +137,11 @@ class ChessApp(App):
 
         yield Label(id = "message_line")
 
+
     def on_mount(self):
 
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
         self.chess_board.update_castle_flag()
-
 
     @on(Input.Submitted)
     async def handle_user_input(self):
@@ -137,13 +158,13 @@ class ChessApp(App):
             move_information = self.game.interperet_move_notation(list(player_input))
 
         if not move_information["valid"]:
+            self.query_one(TurnLabel).turn_colour = self.game.turn_colour
             self.query_one("#command_line_prompt", Label).update("Enter Move: ")
             self.pending_question_information = None
             self.cached_move_information = None
 
             if move_information.get("error") is not None:
                 await self.display_message(move_information["error"])
-
             return
 
         question_information = self.game.get_user_preferences_question(move_information)
@@ -151,6 +172,11 @@ class ChessApp(App):
             self.query_one("#command_line_prompt", Label).update(question_information["question"])
             self.pending_question_information = question_information
             self.cached_move_information = move_information
+
+            if question_information["question_id"] == "draw_offer":
+                self.game.turn_colour, self.game.opposite_colour = self.game.opposite_colour, self.game.turn_colour
+                self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+
             return
         else:
             self.query_one("#command_line_prompt", Label).update("Enter Move: ")
@@ -163,6 +189,16 @@ class ChessApp(App):
         chess_board.update_board()
 
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+
+        if result["resign"]:
+            self.push_screen(GameOverScreen(f"{self.game.winner.capitalize()} Wins!"))
+            return
+        elif result["checkmate"]:
+            self.push_screen(GameOverScreen(f"{self.game.winner.capitalize()} Wins!"))
+            return
+        elif result["draw"]:
+            self.push_screen(GameOverScreen("Game ends in a draw!"))
+            return
 
         if result["message"]:
             await self.display_message(result["message"])
