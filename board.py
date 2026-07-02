@@ -261,7 +261,7 @@ class chess_board:
             piece = positions_white[pos]
                 
             if piece == rook:
-                valid = self.can_castle_if_valid(self, "white", pos)
+                valid = self.can_castle_if_valid("white", pos)
                 piece.can_castle_if_valid = valid
 
         for pos in positions_black:
@@ -269,7 +269,7 @@ class chess_board:
             piece = positions_black[pos]
 
             if piece == rook:
-                valid = self.can_castle_if_valid(self, "black", pos)
+                valid = self.can_castle_if_valid("black", pos)
                 piece.can_castle_if_valid = valid
         
     def check_castle_validity(self, side, colour):
@@ -277,8 +277,12 @@ class chess_board:
         king_initial_position = self.king_positions[colour]
         row_k, col_k = king_initial_position
 
-        rook_initial_position = self.find_rook_to_castle(side, colour)        
-        row_r, col_r = rook_initial_position
+        rook_initial_position = self.find_rook_to_castle(side, colour)
+
+        if not rook_initial_position:
+            return False
+
+        _ , col_r = rook_initial_position
 
         if colour == "white":
             attacking_colour = "black"

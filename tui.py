@@ -119,6 +119,7 @@ class ChessApp(App):
     def on_mount(self):
 
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+        self.chess_board.update_castle_flag()
 
 
     @on(Input.Submitted)

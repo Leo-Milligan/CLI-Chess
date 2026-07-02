@@ -32,104 +32,6 @@ class game:
 
         self.chess_board = chess_board
 
-    def game_loop(self):
-        self.chess_board.show_board()
-
-        position_overview = self.get_position_overview
-        self.position_history_for_draw_viability.append(position_overview)
-
-        while True:
-            if self.draw_offered == True:
-                self.draw_offered = False
-
-                while True:
-                    draw_response = input("Opponent has offered a draw. Do you wish to accept it (y/n): ").strip()
-                    if draw_response in ("y", "n"):
-                        break
-
-                if draw_response == "y":
-                    print("Game ends in a draw!")
-                    self.draw = True
-                    break
-
-                elif draw_response == "n":
-                    self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
-                    continue
-
-            while True:
-                player_input = list(input("Enter move: ").strip(" +#!?"))
-
-                move_information = self.interperet_move_notation(player_input)
-
-                if not move_information["valid"]:
-                    if move_information["error"]:
-                        print(move_information["error"])
-                    continue
-
-                break
-
-            if move_information["resign"] == True:
-                print(f"{self.turn_colour} resigns!")
-                self.game_resigned = True
-                self.winner = self.opposite_colour
-                break
-
-            if move_information["draw_offer"] == True:
-                self.draw_offered = True
-
-                if self.immediate_draw_possible:
-
-                    if self.moves_since_capture_or_pawn_move >= 50:
-                        print("Draw due to there being no pawn moves or piece captures within the last 50 moves.")
-
-                    self.draw = True
-                    break
-
-                self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
-
-                continue
-
-            move_delta = self.move_controller(move_information)
-            self.move_number += 1
-            self.chess_board.show_board()
-
-            self.move_history.append(move_delta)
-
-            if move_delta["captured_piece_flag"]:
-                if self.turn_colour == "white":
-                    self.captured_black_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
-                else:
-                    self.captured_white_pieces.append(move_delta["captured_piece_information"]["captured_piece"])
-
-            position_overview = self.get_position_overview()
-
-            self.update_counters_for_draw(move_information, position_overview)
-
-            check, _ = self.chess_board.king_in_check(self.opposite_colour)
-
-            if check:
-                print(f"{self.opposite_colour} king in check!")
-                checkmate = self.chess_board.king_in_checkmate(self.opposite_colour)
-            else:
-                checkmate = False
-
-            if checkmate:
-                self.winner = self.turn_colour
-                print(f"{self.opposite_colour} king in checkmate!")
-                break
-
-            is_draw, message = self.check_for_draw(self.turn_colour)
-            if is_draw:
-                print(message)
-                break
-
-            for position in self.chess_board.piece_positions[self.opposite_colour]:
-                piece = self.chess_board.get_piece(position)
-                if type(piece) == pawn:
-                    piece.en_passant_vulnerable_flag = False
-
-            self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
-
     def interperet_move_notation(self, player_input):
 
         if len(player_input) == 1 and player_input[0].lower() == "r":
@@ -194,6 +96,7 @@ class game:
         result = {"check": False, "checkmate": False, "draw": False, "message": ""}
 
         move_delta = self.move_controller(move_information)
+        self.chess_board.update_castle_flag()
         self.move_history.append(move_delta)
 
         self.move_number += 1
@@ -275,6 +178,9 @@ class game:
         return (possible_positions, None)
 
     def get_user_preferences_question(self, move_information):
+
+        if move_information["castling_flag"]:
+            return None
 
         final_position_contents = self.chess_board.get_piece(move_information["final_position"])
 
@@ -576,14 +482,16 @@ class game:
             if self.chess_board.check_castle_validity(side, self.turn_colour):
                 return castling_flag, side, None
             else:
-                return castling_flag, side, "Castling not valid." 
+                return castling_flag, side, "Castling not valid."
+
         elif player_input_lower == queenside_castling:
             castling_flag = True
             side = "queenside"
             if self.chess_board.check_castle_validity(side, self.turn_colour):
                 return castling_flag, side, None
             else:
-                return castling_flag, side, "Castling not valid." 
+                return castling_flag, side, "Castling not valid."
+
         else:
             return False, None, None    
 
@@ -723,7 +631,6 @@ class game:
         if move_information["castling_flag"]:
             move_delta_initial = self.get_move_delta_castling(move_information, None)
             self.chess_board.move_piece_with_castle(move_information["side"], self.turn_colour)
-            self.chess_board.update_castle_flag()
             move_delta = self.get_move_delta_castling(move_information, move_delta_initial)
 
         elif move_information["piece_type_to_move"] == pawn and move_information["promotional_piece"]:
