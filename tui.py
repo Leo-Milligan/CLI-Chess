@@ -96,14 +96,14 @@ class GameOverScreen(ModalScreen):
         with Grid(id="dialog"):
             yield Label(self.game_over_message, id="message")
             yield Button("Quit", variant="error", id="quit")
-            yield Button("Cancel", variant="primary", id="cancel")
+            yield Button("Restart", variant="success", id="restart")
 
     def on_button_pressed(self, event):
 
         if event.button.id == "quit":
-            self.app.exit()
-        else:
-            self.app.pop_screen()
+            self.dismiss("quit")
+        elif event.button.id == "restart":
+            self.dismiss("restart")
 
 class ChessApp(App):
 
@@ -154,11 +154,11 @@ class ChessApp(App):
 
         if self.pending_question_information:
             move_information = self.game.interperate_user_preferences_answer(player_input, self.cached_move_information, self.pending_question_information)
+            self.query_one(TurnLabel).turn_colour = self.game.turn_colour
         else:
             move_information = self.game.interperet_move_notation(list(player_input))
 
         if not move_information["valid"]:
-            self.query_one(TurnLabel).turn_colour = self.game.turn_colour
             self.query_one("#command_line_prompt", Label).update("Enter Move: ")
             self.pending_question_information = None
             self.cached_move_information = None
@@ -185,23 +185,36 @@ class ChessApp(App):
 
         result = self.game.apply_move(move_information)
 
-        chess_board = self.query_one(ChessBoardGrid)
-        chess_board.update_board()
-
+        self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
 
-        if result["resign"]:
-            self.push_screen(GameOverScreen(f"{self.game.winner.capitalize()} Wins!"))
-            return
-        elif result["checkmate"]:
-            self.push_screen(GameOverScreen(f"{self.game.winner.capitalize()} Wins!"))
-            return
-        elif result["draw"]:
-            self.push_screen(GameOverScreen("Game ends in a draw!"))
-            return
+        self.check_for_game_end(result)
 
         if result["message"]:
             await self.display_message(result["message"])
+
+    def check_for_game_end(self, result):
+
+        def handle_game_over(choice):
+
+            if choice == "quit":
+                self.exit()
+            elif choice == "restart":
+                self.game.reset_game()
+                self.query_one(ChessBoardGrid).update_board()
+                self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+
+        game_over_message = None
+
+        if result["resign"]:
+            game_over_message = f"{self.game.winner.capitalize()} Wins!"
+        elif result["checkmate"]:
+            game_over_message = f"{self.game.winner.capitalize()} Wins!"
+        elif result["draw"]:
+            game_over_message = "Game ends in a draw!"
+
+        if game_over_message:
+            self.push_screen(GameOverScreen(game_over_message), handle_game_over)
 
     async def display_message(self, message):
 

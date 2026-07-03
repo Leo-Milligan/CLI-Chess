@@ -85,7 +85,7 @@ class chess_board:
         row, col = position
         self.board[row][col] = None
 
-        if position_contents == None:
+        if type(position_contents) == None:
             return
 
         self.piece_positions[position_contents.colour].pop(tuple(position), None)
@@ -495,6 +495,16 @@ class chess_board:
             self.create_piece(pawn, "white", [1, i])
 
         self.mirror_board()
+
+    def clear_board(self):
+
+        self.board = [[None for _ in range(self.num_rows)] for _ in range(self.num_cols)]
+
+        self.piece_positions = {"white": {},
+                                "black": {}
+                                }
+
+        self.king_positions = {}
 
     def mirror_board(self):
         
