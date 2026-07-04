@@ -6,7 +6,7 @@ from game import game
 from textual import on
 from textual.app import App
 from textual.containers import Grid, HorizontalGroup
-from textual.widgets import Static, Input, Label, Button
+from textual.widgets import Static, Input, Label, Button, Footer
 from textual.color import Color
 from textual.reactive import reactive
 from textual.screen import Screen, ModalScreen
@@ -108,6 +108,7 @@ class GameOverScreen(ModalScreen):
 class ChessApp(App):
 
     CSS_PATH = "chess_board_cell.tcss"
+    BINDINGS = [("a", "advance_move", "Advance Move"), ("u", "undo_move", "Undo Move")]
 
     def __init__(self):
 
@@ -136,6 +137,29 @@ class ChessApp(App):
             yield Input(compact = True, id = "command_line")
 
         yield Label(id = "message_line")
+        yield Footer()
+
+    def action_advance_move(self):
+
+        self.game.advance_once_using_move_delta()
+        self.refresh_bindings()
+        self.query_one(ChessBoardGrid).update_board()
+        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+
+    def action_undo_move(self):
+
+        self.game.undo_once_using_move_delta()
+        self.refresh_bindings()
+        self.query_one(ChessBoardGrid).update_board()
+        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+
+    def check_action(self, action, parameters):
+
+        if action == "advance_move" and self.game.move_number == (len(self.game.move_history) + 1):
+            return None
+        if action == "undo_move" and self.game.move_number == 1:
+            return None
+        return True
 
 
     def on_mount(self):
@@ -187,6 +211,7 @@ class ChessApp(App):
 
         self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+        self.refresh_bindings()
 
         self.check_for_game_end(result)
 

@@ -840,7 +840,7 @@ class game:
     def reset_game(self):
 
         for _ in self.move_history:
-            self.retreat_once_using_move_delta()
+            self.undo_once_using_move_delta()
 
         self.turn_colour = "white"
         self.opposite_colour = "black"
@@ -861,7 +861,7 @@ class game:
         self.draw_offered = False
         self.immediate_draw_possible = False
 
-    def retreat_once_using_move_delta(self):
+    def undo_once_using_move_delta(self):
 
         current_move_number = self.move_number
 
@@ -924,4 +924,65 @@ class game:
                 piece_flag = move_delta["captured_piece_information"]["piece_flags"][piece_flag_name]
 
                 if piece_flag is not None:
-                    captured_piece.piece_flag_name = piece_flag
+                    setattr(captured_piece, piece_flag_name, piece_flag)
+
+    def advance_once_using_move_delta(self):
+
+        current_move_number = self.move_number
+
+        if current_move_number == (len(self.move_history) + 1):
+            return
+
+        move_delta = self.move_history[current_move_number - 1]
+
+        self.move_number = move_delta["game_metadata"]["move_number"] + 1
+        last_move_colour = move_delta["game_metadata"]["turn_colour"]
+        self.turn_colour = "white" if last_move_colour == "black" else "black"
+        self.opposite_colour = "white" if self.turn_colour == "black" else "black"
+
+        if move_delta["castling_flag"]:
+            king_piece = move_delta["castling_information"]["king"]
+            king_initial_position = move_delta["castling_information"]["king_initial_position"]
+            king_final_position = move_delta["castling_information"]["king_final_position"]
+
+            rook_piece = move_delta["castling_information"]["rook"]
+            rook_initial_position = move_delta["castling_information"]["rook_initial_position"]
+            rook_final_position = move_delta["castling_information"]["rook_final_position"]
+
+            self.chess_board.remove_piece(king_initial_position)
+            self.chess_board.remove_piece(rook_initial_position)
+
+            self.chess_board.insert_piece(king_piece, king_final_position)
+            self.chess_board.insert_piece(rook_piece, rook_final_position)
+
+            king_piece.has_moved = True
+            rook_piece.has_moved = True
+            rook_piece.can_castle_if_valid = False
+
+            return
+
+        if move_delta["captured_piece_flag"]:
+            captured_piece = move_delta["captured_piece_information"]["captured_piece"]
+            captured_piece_position = move_delta["captured_piece_information"]["captured_piece_position"]
+
+            if move_delta["game_metadata"]["turn_colour"] == "white":
+                self.captured_black_pieces.append(captured_piece)
+            elif move_delta["game_metadata"]["turn_colour"] == "Black":
+                self.captured_white_pieces.append(captured_piece)
+
+            self.chess_board.remove_piece(captured_piece_position)
+
+        initial_position = move_delta["piece_information_initial"]["piece_position"]
+        final_position = move_delta["piece_information_final"]["piece_position"]
+
+        initial_piece = move_delta["piece_information_initial"]["piece"]
+
+        self.chess_board.remove_piece(initial_position)
+        self.chess_board.insert_piece(initial_piece, final_position)
+
+        for piece_flag_name in move_delta["piece_information_final"]["piece_flags"]:
+            piece_flag = move_delta["piece_information_final"]["piece_flags"][piece_flag_name]
+
+            if piece_flag is not None:
+                setattr(initial_piece, piece_flag_name, piece_flag)
+
