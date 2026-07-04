@@ -11,7 +11,7 @@ GameOverScreen {
 }
 
 #dialog {
-    grid-size: 2;
+    grid-size: 3;
     grid-gutter: 1 2;
     grid-rows: 1fr 3;
     padding: 0 1;
@@ -22,7 +22,7 @@ GameOverScreen {
 }
 
 #message {
-    column-span: 2;
+    column-span: 3;
     height: 1fr;
     width: 1fr;
     content-align: center middle;

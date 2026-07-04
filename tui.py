@@ -97,6 +97,7 @@ class GameOverScreen(ModalScreen):
             yield Label(self.game_over_message, id="message")
             yield Button("Quit", variant="error", id="quit")
             yield Button("Restart", variant="success", id="restart")
+            yield Button("Review", variant="primary", id="review")
 
     def on_button_pressed(self, event):
 
@@ -104,11 +105,25 @@ class GameOverScreen(ModalScreen):
             self.dismiss("quit")
         elif event.button.id == "restart":
             self.dismiss("restart")
+        elif event.button.id == "review":
+            self.dismiss("review")
+
+class StatusBar(Static):
+
+    def compose(self):
+        with HorizontalGroup():
+            yield TurnLabel()
+            yield Label("Enter Move: ", id = "command_line_prompt")
+            yield Input(compact = True, id = "command_line")
+
+        yield Label(id = "message_line")
 
 class ChessApp(App):
 
     CSS_PATH = "chess_board_cell.tcss"
-    BINDINGS = [("a", "advance_move", "Advance Move"), ("u", "undo_move", "Undo Move")]
+    BINDINGS = [("a", "advance_move", "Advance Move"),
+                ("u", "undo_move", "Undo Move"),
+                ("q", "exit_review_mode", "Exit Review Mode")]
 
     def __init__(self):
 
@@ -117,6 +132,8 @@ class ChessApp(App):
         self.game = game(self.chess_board)
         self.pending_question_information = None
         self.cached_move_information = None
+        self.last_game_over_message = None
+        self.review_mode = False
 
     def compose(self):
 
@@ -130,14 +147,10 @@ class ChessApp(App):
         board_colour = "default"
 
         yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour)
+        yield StatusBar()
 
-        with HorizontalGroup(id = "status_bar"):
-            yield TurnLabel()
-            yield Label("Enter Move: ", id = "command_line_prompt")
-            yield Input(compact = True, id = "command_line")
-
-        yield Label(id = "message_line")
-        yield Footer()
+    def action_exit_review_mode(self):
+        self.exit_review_mode()
 
     def action_advance_move(self):
 
@@ -155,12 +168,13 @@ class ChessApp(App):
 
     def check_action(self, action, parameters):
 
+        if action == "exit_review_mode" and not self.review_mode:
+            return False
         if action == "advance_move" and self.game.move_number == (len(self.game.move_history) + 1):
             return None
         if action == "undo_move" and self.game.move_number == 1:
             return None
         return True
-
 
     def on_mount(self):
 
@@ -220,26 +234,29 @@ class ChessApp(App):
 
     def check_for_game_end(self, result):
 
-        def handle_game_over(choice):
-
-            if choice == "quit":
-                self.exit()
-            elif choice == "restart":
-                self.game.reset_game()
-                self.query_one(ChessBoardGrid).update_board()
-                self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-
-        game_over_message = None
-
         if result["resign"]:
-            game_over_message = f"{self.game.winner.capitalize()} Wins!"
+            message = f"{self.game.winner.capitalize()} Wins!"
         elif result["checkmate"]:
-            game_over_message = f"{self.game.winner.capitalize()} Wins!"
+            message = f"{self.game.winner.capitalize()} Wins!"
         elif result["draw"]:
-            game_over_message = "Game ends in a draw!"
+            message = "Game ends in a draw!"
+        else:
+            return
 
-        if game_over_message:
-            self.push_screen(GameOverScreen(game_over_message), handle_game_over)
+        self.last_game_over_message = message
+        self.push_screen(GameOverScreen(message), self.handle_game_over)
+
+
+    def handle_game_over(self, choice):
+
+        if choice == "quit":
+            self.exit()
+        elif choice == "restart":
+            self.game.reset_game()
+            self.query_one(ChessBoardGrid).update_board()
+            self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+        elif choice == "review":
+            self.enter_review_mode()
 
     async def display_message(self, message):
 
@@ -251,6 +268,27 @@ class ChessApp(App):
     def clear_message(self):
         message_line = self.query_one("#message_line", Label)
         message_line.update("")
+
+    def enter_review_mode(self):
+
+        self.query_one(StatusBar).display = False
+
+        if not self.query(Footer):
+            self.mount(Footer())
+
+        self.review_mode = True
+
+    def exit_review_mode(self):
+
+        self.query_one(StatusBar).display = True
+
+        footer = self.query(Footer)
+        if footer:
+            footer.remove()
+
+        self.review_mode = False
+
+        self.push_screen(GameOverScreen(self.last_game_over_message), self.handle_game_over)
 
 if __name__ == "__main__":
     app = ChessApp()
