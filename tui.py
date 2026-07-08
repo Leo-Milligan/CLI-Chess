@@ -197,6 +197,8 @@ class ChessApp(App):
         self.refresh_bindings()
         self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_white_pieces)
+        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_black_pieces)
 
     def action_undo_move(self):
 
@@ -204,6 +206,8 @@ class ChessApp(App):
         self.refresh_bindings()
         self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_white_pieces)
+        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_black_pieces)
 
     def check_action(self, action, parameters):
 
@@ -295,6 +299,8 @@ class ChessApp(App):
             self.game.reset_game()
             self.query_one(ChessBoardGrid).update_board()
             self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+            self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_white_pieces)
+            self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_black_pieces)
         elif choice == "review":
             self.enter_review_mode()
 

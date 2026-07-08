@@ -915,7 +915,7 @@ class game:
 
             if move_delta["game_metadata"]["turn_colour"] == "white":
                 self.captured_black_pieces.remove(captured_piece)
-            elif move_delta["game_metadata"]["turn_colour"] == "Black":
+            elif move_delta["game_metadata"]["turn_colour"] == "black":
                 self.captured_white_pieces.remove(captured_piece)
 
             self.chess_board.insert_piece(captured_piece, captured_piece_position)
@@ -967,7 +967,7 @@ class game:
 
             if move_delta["game_metadata"]["turn_colour"] == "white":
                 self.captured_black_pieces.append(captured_piece)
-            elif move_delta["game_metadata"]["turn_colour"] == "Black":
+            elif move_delta["game_metadata"]["turn_colour"] == "black":
                 self.captured_white_pieces.append(captured_piece)
 
             self.chess_board.remove_piece(captured_piece_position)
