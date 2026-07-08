@@ -2,6 +2,7 @@
 
 from board import chess_board
 from game import game
+from Pieces import *
 
 from textual import on
 from textual.app import App
@@ -19,6 +20,7 @@ with open("ui_style_sheet.json") as data:
 class Cell(Static):
 
     def __init__(self, board, board_colour, piece_symbols, row, col):
+
         super().__init__(classes = "cell")
         self.board = board
         self.piece_symbols = piece_symbols
@@ -54,6 +56,7 @@ class Cell(Static):
 class ChessBoardGrid(Grid):
 
     def __init__(self, board, num_rows, num_cols, piece_symbols, board_colour):
+
         super().__init__(id = "chess_board_grid")
         self.board = board
         self.game = game
@@ -88,6 +91,7 @@ class TurnLabel(Label):
 class GameOverScreen(ModalScreen):
 
     def __init__(self, game_over_message):
+
         super().__init__()
         self.game_over_message = game_over_message
 
@@ -111,12 +115,45 @@ class GameOverScreen(ModalScreen):
 class StatusBar(Static):
 
     def compose(self):
+
         with HorizontalGroup():
             yield TurnLabel()
             yield Label("Enter Move: ", id = "command_line_prompt")
             yield Input(compact = True, id = "command_line")
 
         yield Label(id = "message_line")
+
+class CapturedPiecesDisplay(Label):
+
+    captured_piece_list = reactive([])
+
+    def __init__(self, id):
+
+        super().__init__(id=id)
+        self.piece_type_counts = {"king": 0, "queen": 0, "rook": 0, "bishop": 0, "knight": 0, "pawn": 0}
+
+    def watch_captured_piece_list(self):
+
+        string = ""
+
+        self.update_piece_type_counts()
+
+        for piece_type in self.piece_type_counts:
+            if self.piece_type_counts[piece_type] > 0:
+                piece_symbol = ui_style_sheet["piece_symbols"]["small"][piece_type]
+                number_of_pieces = self.piece_type_counts[piece_type]
+                string += f"{piece_symbol} x{number_of_pieces} "
+
+        self.update(string)
+
+    def update_piece_type_counts(self):
+
+        self.piece_type_counts = {"king": 0, "queen": 0, "rook": 0, "bishop": 0, "knight": 0, "pawn": 0}
+
+        for piece in self.captured_piece_list:
+            piece_name = type(piece).__name__
+            if piece_name in list(self.piece_type_counts):
+                self.piece_type_counts[piece_name] += 1
 
 class ChessApp(App):
 
@@ -146,7 +183,9 @@ class ChessApp(App):
         piece_style = "small"
         board_colour = "default"
 
+        yield CapturedPiecesDisplay(id="black_captured_pieces_display")
         yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour)
+        yield CapturedPiecesDisplay(id="white_captured_pieces_display")
         yield StatusBar()
 
     def action_exit_review_mode(self):
@@ -225,7 +264,8 @@ class ChessApp(App):
 
         self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-        self.refresh_bindings()
+        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_white_pieces)
+        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_black_pieces)
 
         self.check_for_game_end(result)
 
