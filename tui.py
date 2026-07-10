@@ -334,6 +334,9 @@ class ChessApp(App):
             self.query_one(TurnLabel).turn_colour = self.game.turn_colour
             self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
             self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
+            self.query_one(MoveDataTable).move_notation_history = copy.deepcopy(self.game.move_notation_history)
+            if self.game.move_number > 1:
+                self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
         elif choice == "review":
             self.enter_review_mode()
 

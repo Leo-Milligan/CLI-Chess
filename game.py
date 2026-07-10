@@ -914,6 +914,8 @@ class game:
         self.captured_white_pieces = []
         self.captured_black_pieces = []
         self.move_history = []
+        self.move_notation_history = {"white": [],
+                                      "black": []}
         self.position_overview_history = []
         self.position_history_for_draw_viability = []
 
