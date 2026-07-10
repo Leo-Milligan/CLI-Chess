@@ -71,12 +71,14 @@ class game:
         piece_type_to_move, remainder = self.get_piece_type_from_input(remainder)
         move_information["piece_type_to_move"] = piece_type_to_move
 
-        initial_row, initial_col, error = self.get_ambiguity_clues(remainder)
+        initial_row, initial_col, error = self.get_ambiguity_clues_from_user(remainder)
         if error:
             return {"valid": False, "error": error}
 
-        initial_position, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position)
+        initial_position, ambiguity_solving_positional_element, error = self.find_initial_position(piece_type_to_move, initial_row, initial_col, final_position)
         move_information["initial_position"] = initial_position
+        move_information["ambiguity_solving_positional_element"] = ambiguity_solving_positional_element
+
         if not initial_position:
             return {"valid": False, "error": error}
 
@@ -155,12 +157,8 @@ class game:
     def find_initial_position(self, piece_type_to_move, initial_row, initial_col, final_position):
 
         possible_positions = []
+        defining_positional_element = None
         for key in self.chess_board.piece_positions[self.turn_colour]:
-
-            if initial_row is not None and key[0] != initial_row:
-                continue
-            elif initial_col is not None and key[1] != initial_col:
-                continue
 
             cell_contents = self.chess_board.piece_positions[self.turn_colour][key]
 
@@ -168,7 +166,7 @@ class game:
                 possible_positions.append(list(key))
 
         if len(possible_positions) == 0:
-            return (None, f"There are no {self.turn_colour} {piece_type_to_move.__name__}s on the board.")
+            return (None, defining_positional_element, f"There are no {self.turn_colour} {piece_type_to_move.__name__}s on the board.")
 
         for i in possible_positions.copy():
 
@@ -179,13 +177,63 @@ class game:
             if valid == False:
                 possible_positions.remove(i)
 
+        initial_possible_positions_list = possible_positions.copy()
+
+        if initial_row and initial_col:
+            for i in possible_positions.copy():
+                if i[0] != initial_row or i[1] != initial_col:
+                    possible_positions.remove(i)
+        elif initial_row:
+            for i in possible_positions.copy():
+                if i[0] != initial_row:
+                    possible_positions.remove(i)
+        elif initial_col:
+            for i in possible_positions.copy():
+                if i[1] != initial_col:
+                    possible_positions.remove(i)
+
         if len(possible_positions) == 0:
-            return (None, f"No {self.turn_colour} {piece_type_to_move.__name__}s can make this move.")
+            return (None, defining_positional_element, f"No {self.turn_colour} {piece_type_to_move.__name__}s can make this move.")
+
+        if len(possible_positions) == 1 and len(initial_possible_positions_list) > 1:
+            defining_row, defining_col = self.get_ambiguity_solving_positional_element(possible_positions[0], initial_possible_positions_list)
+
+            if defining_col:
+                defining_positional_element = defining_col
+            elif defining_row:
+                defining_positional_element = defining_row
 
         if len(possible_positions) == 1:
-            return (possible_positions[0], None)
+            return (possible_positions[0], defining_positional_element, None)
 
-        return (possible_positions, None)
+        return (possible_positions, defining_positional_element, None)
+
+    def get_ambiguity_solving_positional_element(self, primary_position, secondary_positions):
+
+        if primary_position in secondary_positions:
+            secondary_positions.remove(primary_position)
+
+        primary_row, primary_col = primary_position
+
+        defining_row = primary_row
+        defining_col = primary_col
+
+        for secondary_position in secondary_positions:
+            secondary_row, secondary_col = secondary_position
+
+            if secondary_row == defining_row:
+                defining_row = None
+            elif secondary_col == defining_col:
+                defining_col = None
+
+        if defining_col is not None:
+            defining_col = chr(defining_col + 97)
+            defining_col = str(defining_col)
+        elif defining_row is not None:
+            defining_row = defining_row + 1
+            defining_row = str(defining_row)
+
+        return (defining_row, defining_col)
 
     def get_user_preferences_question(self, move_information):
 
@@ -303,7 +351,17 @@ class game:
 
             if 0 <= int(player_input) <= (len(possible_initial_positions) - 1):
                 initial_position = possible_initial_positions[int(player_input)]
+                defining_row, defining_col = self.get_ambiguity_solving_positional_element(initial_position, possible_initial_positions)
+
+                if defining_col:
+                    ambiguity_solving_positional_element = defining_col
+                elif defining_row:
+                    ambiguity_solving_positional_element = defining_row
+                else:
+                    ambiguity_solving_positional_element = None
+
                 move_information["initial_position"] = initial_position
+                move_information["ambiguity_solving_positional_element"] = ambiguity_solving_positional_element
 
                 if move_information["piece_type_to_move"] == pawn:
                     initial_position_contents = self.chess_board.get_piece(move_information["initial_position"])
@@ -424,7 +482,7 @@ class game:
 
         return (piece_type_to_move, player_input)
 
-    def get_ambiguity_clues(self, player_input):
+    def get_ambiguity_clues_from_user(self, player_input):
 
         initial_row = None
         initial_col = None
@@ -669,7 +727,6 @@ class game:
 
                 move_delta["castling_information"]["king_final_position"] = [row, col-2]
                 move_delta["castling_information"]["rook_final_position"] = [row, col-1]
-
 
         return move_delta
   
