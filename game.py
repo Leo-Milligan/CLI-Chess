@@ -21,6 +21,8 @@ class game:
         self.captured_white_pieces = []
         self.captured_black_pieces = []
         self.move_history = []
+        self.move_notation_history = {"white": [],
+                                      "black": []}
         self.position_history_for_draw_viability = []
 
         self.winner = None
@@ -133,6 +135,10 @@ class game:
             checkmate = False
 
         result["checkmate"] = checkmate
+
+        move_notation = self.get_move_notation(move_information, result)
+        self.move_notation_history[self.turn_colour].append(move_notation)
+        print(self.move_notation_history)
 
         if checkmate:
             result["message"] = f"{self.opposite_colour} king in checkmate!"
@@ -1043,3 +1049,54 @@ class game:
             if piece_flag is not None:
                 setattr(initial_piece, piece_flag_name, piece_flag)
 
+    def get_move_notation(self, move_information, result):
+
+        initial_move_notation = self.get_initial_move_notation(move_information)
+
+        final_move_notation = self.add_outcome_to_move_notation(initial_move_notation, result)
+
+        return final_move_notation
+
+    def get_initial_move_notation(self, move_information):
+
+        if move_information["castling_flag"]:
+            if move_information["side"] == "kingside":
+                return "O-O"
+            elif move_information["side"] == "queenside":
+                return "O-O-O"
+
+        move_notation = ""
+
+        piece_type_to_symbol = {king: "K",
+                                queen: "Q",
+                                rook: "R",
+                                bishop: "B",
+                                knight: "N",
+                                pawn: ""}
+
+        piece_symbol = piece_type_to_symbol[move_information["piece_type_to_move"]]
+        move_notation += piece_symbol
+
+        if move_information["ambiguity_solving_positional_element"]:
+            move_notation += move_information["ambiguity_solving_positional_element"]
+
+        if move_information["take_piece_flag"]:
+            move_notation += "x"
+
+        final_position_move_notation = self.coordinate_to_chess_notation(move_information["final_position"])
+        move_notation += final_position_move_notation
+
+        if move_information["promotional_piece"]:
+            promotional_piece_symbol = piece_type_to_symbol[move_information["promotional_piece"]]
+            move_notation += f"={promotional_piece_symbol}"
+
+        return move_notation
+
+    def add_outcome_to_move_notation(self, initial_move_notation, result):
+
+        if result["checkmate"]:
+            initial_move_notation += "#"
+        elif result["checkmate"]:
+            initial_move_notation += "+"
+
+        return initial_move_notation

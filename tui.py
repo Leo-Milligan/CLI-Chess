@@ -7,11 +7,12 @@ from Pieces import *
 from textual import on
 from textual.app import App
 from textual.containers import Grid, HorizontalGroup
-from textual.widgets import Static, Input, Label, Button, Footer
+from textual.widgets import Static, Input, Label, Button, Footer, DataTable
 from textual.color import Color
 from textual.reactive import reactive
 from textual.screen import Screen, ModalScreen
 
+import copy
 import json
 
 with open("ui_style_sheet.json") as data:
@@ -155,6 +156,30 @@ class CapturedPiecesDisplay(Label):
             if piece_name in list(self.piece_type_counts):
                 self.piece_type_counts[piece_name] += 1
 
+class MoveDataTable(DataTable):
+
+    move_notation_history = reactive({"white": [],
+                                      "black": []})
+
+    def watch_move_notation_history(self):
+
+        self.clear()
+
+        for i in range(len(self.move_notation_history["white"])):
+
+            row_number = i + 1
+            current_white_move = self.move_notation_history["white"][i] if i < len(self.move_notation_history["white"]) else ""
+            current_black_move = self.move_notation_history["black"][i] if i < len(self.move_notation_history["black"]) else ""
+
+            self.add_row(row_number,current_white_move,current_black_move)
+
+    def on_mount(self):
+        self.add_columns(("Turn", "turn"),
+                         ("W", "white"),
+                         ("B", "black"))
+        self.can_focus = False
+        self.cursor_type = "row"
+
 class ChessApp(App):
 
     CSS_PATH = "chess_board_cell.tcss"
@@ -185,6 +210,7 @@ class ChessApp(App):
 
         yield CapturedPiecesDisplay(id="black_captured_pieces_display")
         yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour)
+        yield MoveDataTable()
         yield CapturedPiecesDisplay(id="white_captured_pieces_display")
         yield StatusBar()
 
@@ -197,8 +223,10 @@ class ChessApp(App):
         self.refresh_bindings()
         self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_white_pieces)
-        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_black_pieces)
+        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
+        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
+        if self.game.move_number > 1:
+            self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
 
     def action_undo_move(self):
 
@@ -206,8 +234,10 @@ class ChessApp(App):
         self.refresh_bindings()
         self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_white_pieces)
-        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_black_pieces)
+        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
+        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
+        if self.game.move_number > 1:
+            self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
 
     def check_action(self, action, parameters):
 
@@ -268,8 +298,11 @@ class ChessApp(App):
 
         self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_white_pieces)
-        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_black_pieces)
+        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
+        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
+        self.query_one(MoveDataTable).move_notation_history = copy.deepcopy(self.game.move_notation_history)
+        if self.game.move_number > 1:
+            self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
 
         self.check_for_game_end(result)
 
@@ -299,8 +332,8 @@ class ChessApp(App):
             self.game.reset_game()
             self.query_one(ChessBoardGrid).update_board()
             self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-            self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_white_pieces)
-            self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = list(self.game.captured_black_pieces)
+            self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
+            self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
         elif choice == "review":
             self.enter_review_mode()
 
