@@ -223,6 +223,7 @@ class ChessGame(Screen):
         super().__init__()
         self.chess_board = chess_board()
         self.game = game(self.chess_board)
+        self.colour_at_bottom = "white"
         self.pending_question_information = None
         self.cached_move_information = None
         self.last_game_over_message = None
@@ -232,7 +233,13 @@ class ChessGame(Screen):
 
         num_rows = self.chess_board.num_rows
         num_cols = self.chess_board.num_cols
-        colour_at_bottom = "white"
+
+        if self.colour_at_bottom == "white":
+            upper_captured_pieces_display_id = "white_captured_pieces_display"
+            lower_captured_pieces_display_id = "black_captured_pieces_display"
+        else:
+            upper_captured_pieces_display_id = "black_captured_pieces_display"
+            lower_captured_pieces_display_id = "white_captured_pieces_display"
 
         self.chess_board.set_board()
         board = self.chess_board.board
@@ -240,10 +247,10 @@ class ChessGame(Screen):
         piece_style = "small"
         board_colour = "default"
 
-        yield CapturedPiecesDisplay(id="black_captured_pieces_display")
-        yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom)
+        yield CapturedPiecesDisplay(id=upper_captured_pieces_display_id)
+        yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour, self.colour_at_bottom)
         yield MoveDataTable()
-        yield CapturedPiecesDisplay(id="white_captured_pieces_display")
+        yield CapturedPiecesDisplay(id=lower_captured_pieces_display_id)
         yield StatusBar()
 
     def action_exit_review_mode(self):
