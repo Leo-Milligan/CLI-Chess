@@ -1,11 +1,9 @@
-#chess_board_grid {
-}
-
 .cell {
     width: 1fr;
     height: 1fr;
     content-align: center middle;
 }
+
 GameOverScreen {
     align: center middle;
 }

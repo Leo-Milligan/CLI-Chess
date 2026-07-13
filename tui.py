@@ -18,6 +18,30 @@ import json
 with open("ui_style_sheet.json") as data:
     ui_style_sheet = json.load(data)
 
+class MainMenu(Screen):
+
+    def compose(self):
+
+        title = "\
+         ██████╗ ██╗      ██╗         ██████╗ ██╗  ██╗ ███████╗ ███████╗ ███████╗\n\
+        ██╔════╝ ██║      ██║        ██╔════╝ ██║  ██║ ██╔════╝ ██╔════╝ ██╔════╝\n\
+        ██║      ██║      ██║ █████╗ ██║      ███████║ █████╗   ███████╗ ███████╗\n\
+        ██║      ██║      ██║ ╚════╝ ██║      ██╔══██║ ██╔══╝   ╚════██║ ╚════██║\n\
+        ╚██████╗ ███████╗ ██║        ╚██████╗ ██║  ██║ ███████╗ ███████║ ███████║\n\
+         ╚═════╝ ╚══════╝ ╚═╝         ╚═════╝ ╚═╝  ╚═╝ ╚══════╝ ╚══════╝ ╚══════╝"
+
+        yield Label(title)
+        yield Button("Play", variant="success", id="play_button")
+        yield Button("Quit", variant="error", id="quit_button")
+
+
+    def on_button_pressed(self, event):
+
+        if event.button.id == "quit_button":
+            self.app.exit()
+        elif event.button.id == "play_button":
+            self.app.push_screen(ChessGame())
+
 class Cell(Static):
 
     def __init__(self, board, board_colour, piece_symbols, row, col):
@@ -56,23 +80,31 @@ class Cell(Static):
 
 class ChessBoardGrid(Grid):
 
-    def __init__(self, board, num_rows, num_cols, piece_symbols, board_colour):
+    def __init__(self, board, num_rows, num_cols, piece_symbols, board_colour, colour_at_bottom):
 
-        super().__init__(id = "chess_board_grid")
+        super().__init__(id="chess_board_grid")
         self.board = board
         self.game = game
         self.num_rows = num_rows
         self.num_cols = num_cols
         self.piece_symbols = piece_symbols
         self.board_colour = board_colour
+        self.colour_at_bottom = colour_at_bottom
 
     def compose(self):
 
         self.styles.grid_size_columns = self.num_cols
         self.styles.grid_size_rows = self.num_rows
 
-        for col in range(self.num_cols):
-            for row in range(self.num_rows):
+        if self.colour_at_bottom == "white":
+            col_range = range(self.num_cols-1,-1,-1)
+            row_range = range(self.num_rows-1,-1,-1)
+        else:
+            col_range = range(self.num_cols)
+            row_range = range(self.num_rows)
+
+        for col in col_range:
+            for row in row_range:
                 cell = Cell(self.board, self.board_colour, self.piece_symbols, row, col)
                 cell.colour_cell()
                 cell.populate_cell()
@@ -100,17 +132,17 @@ class GameOverScreen(ModalScreen):
 
         with Grid(id="dialog"):
             yield Label(self.game_over_message, id="message")
-            yield Button("Quit", variant="error", id="quit")
-            yield Button("Restart", variant="success", id="restart")
-            yield Button("Review", variant="primary", id="review")
+            yield Button("Menu", variant="error", id="menu_button")
+            yield Button("Restart", variant="success", id="restart_button")
+            yield Button("Review", variant="primary", id="review_button")
 
     def on_button_pressed(self, event):
 
-        if event.button.id == "quit":
-            self.dismiss("quit")
-        elif event.button.id == "restart":
+        if event.button.id == "menu_button":
+            self.dismiss("menu")
+        elif event.button.id == "restart_button":
             self.dismiss("restart")
-        elif event.button.id == "review":
+        elif event.button.id == "review_button":
             self.dismiss("review")
 
 class StatusBar(Static):
@@ -180,9 +212,8 @@ class MoveDataTable(DataTable):
         self.can_focus = False
         self.cursor_type = "row"
 
-class ChessApp(App):
+class ChessGame(Screen):
 
-    CSS_PATH = "chess_board_cell.tcss"
     BINDINGS = [("a", "advance_move", "Advance Move"),
                 ("u", "undo_move", "Undo Move"),
                 ("q", "exit_review_mode", "Exit Review Mode")]
@@ -201,6 +232,7 @@ class ChessApp(App):
 
         num_rows = self.chess_board.num_rows
         num_cols = self.chess_board.num_cols
+        colour_at_bottom = "white"
 
         self.chess_board.set_board()
         board = self.chess_board.board
@@ -209,7 +241,7 @@ class ChessApp(App):
         board_colour = "default"
 
         yield CapturedPiecesDisplay(id="black_captured_pieces_display")
-        yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour)
+        yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom)
         yield MoveDataTable()
         yield CapturedPiecesDisplay(id="white_captured_pieces_display")
         yield StatusBar()
@@ -321,22 +353,26 @@ class ChessApp(App):
             return
 
         self.last_game_over_message = message
-        self.push_screen(GameOverScreen(message), self.handle_game_over)
+        self.app.push_screen(GameOverScreen(message), self.handle_game_over)
 
+    def reset_game_and_ui(self):
+
+        self.game.reset_game()
+        self.query_one(ChessBoardGrid).update_board()
+        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
+        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
+        self.query_one(MoveDataTable).move_notation_history = copy.deepcopy(self.game.move_notation_history)
+        if self.game.move_number > 1:
+            self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
 
     def handle_game_over(self, choice):
 
-        if choice == "quit":
-            self.exit()
-        elif choice == "restart":
+        if choice == "menu":
             self.game.reset_game()
-            self.query_one(ChessBoardGrid).update_board()
-            self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-            self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
-            self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
-            self.query_one(MoveDataTable).move_notation_history = copy.deepcopy(self.game.move_notation_history)
-            if self.game.move_number > 1:
-                self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
+            self.app.pop_screen()
+        elif choice == "restart":
+            self.reset_game_and_ui()
         elif choice == "review":
             self.enter_review_mode()
 
@@ -370,7 +406,15 @@ class ChessApp(App):
 
         self.review_mode = False
 
-        self.push_screen(GameOverScreen(self.last_game_over_message), self.handle_game_over)
+        self.app.push_screen(GameOverScreen(self.last_game_over_message), self.handle_game_over)
+
+class ChessApp(App):
+
+    CSS_PATH = "chess_board_cell.tcss"
+    SCREENS = {"main_menu": MainMenu, "chess_game": ChessGame}
+
+    def on_mount(self):
+        self.push_screen("main_menu")
 
 if __name__ == "__main__":
     app = ChessApp()
