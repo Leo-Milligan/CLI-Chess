@@ -237,7 +237,6 @@ class ChessBoardWithAccessories(Static):
         yield ChessBoardGrid(self.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
         yield CapturedPiecesDisplay(id=lower_captured_pieces_display_id)
 
-
 class ChessGame(Screen):
 
     BINDINGS = [("a", "advance_move", "Advance Move"),
