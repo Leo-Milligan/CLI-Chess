@@ -15,8 +15,9 @@ from textual.screen import Screen, ModalScreen
 import copy
 import json
 
-with open("ui_style_sheet.json") as data:
-    ui_style_sheet = json.load(data)
+
+ui_style_sheet = json.load(open("ui_style_sheet.json", encoding="utf-8"))
+
 
 class Cell(Static):
 
