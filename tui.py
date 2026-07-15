@@ -6,7 +6,7 @@ from Pieces import *
 
 from textual import on
 from textual.app import App
-from textual.containers import Grid, HorizontalGroup
+from textual.containers import Grid, HorizontalGroup, VerticalGroup
 from textual.widgets import Static, Input, Label, Button, Footer, DataTable
 from textual.color import Color
 from textual.reactive import reactive
@@ -21,19 +21,22 @@ with open("ui_style_sheet.json") as data:
 class MainMenu(Screen):
 
     def compose(self):
-
         title = "\
-         ██████╗ ██╗      ██╗         ██████╗ ██╗  ██╗ ███████╗ ███████╗ ███████╗\n\
-        ██╔════╝ ██║      ██║        ██╔════╝ ██║  ██║ ██╔════╝ ██╔════╝ ██╔════╝\n\
-        ██║      ██║      ██║ █████╗ ██║      ███████║ █████╗   ███████╗ ███████╗\n\
-        ██║      ██║      ██║ ╚════╝ ██║      ██╔══██║ ██╔══╝   ╚════██║ ╚════██║\n\
-        ╚██████╗ ███████╗ ██║        ╚██████╗ ██║  ██║ ███████╗ ███████║ ███████║\n\
-         ╚═════╝ ╚══════╝ ╚═╝         ╚═════╝ ╚═╝  ╚═╝ ╚══════╝ ╚══════╝ ╚══════╝"
+ ██████╗ ██╗      ██╗         ██████╗ ██╗  ██╗ ███████╗ ███████╗ ███████╗\n\
+██╔════╝ ██║      ██║        ██╔════╝ ██║  ██║ ██╔════╝ ██╔════╝ ██╔════╝\n\
+██║      ██║      ██║ █████╗ ██║      ███████║ █████╗   ███████╗ ███████╗\n\
+██║      ██║      ██║ ╚════╝ ██║      ██╔══██║ ██╔══╝   ╚════██║ ╚════██║\n\
+╚██████╗ ███████╗ ██║        ╚██████╗ ██║  ██║ ███████╗ ███████║ ███████║\n\
+ ╚═════╝ ╚══════╝ ╚═╝         ╚═════╝ ╚═╝  ╚═╝ ╚══════╝ ╚══════╝ ╚══════╝"
 
-        yield Label(title)
-        yield Button("Play", variant="success", id="play_button")
-        yield Button("Quit", variant="error", id="quit_button")
-
+        with Grid(id="main_menu_stack"):
+            yield Static()
+            yield Label(title, id="title")
+            yield Static()
+            yield Static()
+            with Grid(id="main_menu_buttons"):
+                yield Button("Play", variant="success", id="play_button")
+                yield Button("Quit", variant="error", id="quit_button")
 
     def on_button_pressed(self, event):
 
@@ -98,13 +101,11 @@ class ChessBoardGrid(Grid):
 
         if self.colour_at_bottom == "white":
             col_range = range(self.num_cols-1,-1,-1)
-            row_range = range(self.num_rows-1,-1,-1)
         else:
             col_range = range(self.num_cols)
-            row_range = range(self.num_rows)
 
         for col in col_range:
-            for row in row_range:
+            for row in range(self.num_rows):
                 cell = Cell(self.board, self.board_colour, self.piece_symbols, row, col)
                 cell.colour_cell()
                 cell.populate_cell()

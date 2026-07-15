@@ -138,7 +138,6 @@ class game:
 
         move_notation = self.get_move_notation(move_information, result)
         self.move_notation_history[self.turn_colour].append(move_notation)
-        print(self.move_notation_history)
 
         if checkmate:
             result["message"] = f"{self.opposite_colour} king in checkmate!"
@@ -302,7 +301,7 @@ class game:
 
         elif move_information["piece_type_to_move"] == pawn and moving_to_last_row and not move_information["promotional_piece"]:
             question_id = "confirm_promotion"
-            question = "Promote to Queen (Q), Rook (R), Bishop (B), Knight (N), or press (x) to re-enter move: "
+            question = "Promote to Queen (Q), Rook (R), Bishop (B), Knight (N), or enter (x) to re-enter move: "
 
             keys = list(piece_mapping.keys())
             keys_excluding_pawn_and_king = [k for k in keys if k not in ("K", "P")]
