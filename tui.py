@@ -95,6 +95,7 @@ class ChessBoardGrid(Grid):
 
     def compose(self):
 
+
         self.styles.grid_size_columns = self.num_cols
         self.styles.grid_size_rows = self.num_rows
 
@@ -205,12 +206,27 @@ class MoveDataTable(DataTable):
 
             self.add_row(row_number,current_white_move,current_black_move)
 
+        self.adjust_column_size()
+
+    def adjust_column_size(self):
+
+        total_width = self.size.width
+        total_padding = 2 * (self.cell_padding * len(self.columns))
+        column_width = (total_width - total_padding) // len(self.columns)
+        for column in self.columns.values():
+            column.auto_width = False
+            column.width = column_width
+        self.refresh()
+
     def on_mount(self):
         self.add_columns(("Turn", "turn"),
-                         ("W", "white"),
-                         ("B", "black"))
+                         ("White", "white"),
+                         ("Black", "black"))
         self.can_focus = False
         self.cursor_type = "row"
+
+    def on_resize(self):
+        self.adjust_column_size()
 
 class ChessBoardWithAccessories(Static):
 
@@ -235,6 +251,50 @@ class ChessBoardWithAccessories(Static):
         yield CapturedPiecesDisplay(id=upper_captured_pieces_display_id)
         yield ChessBoardGrid(self.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
         yield CapturedPiecesDisplay(id=lower_captured_pieces_display_id)
+
+    def update_size(self):
+
+        width_per_cell = self.parent.size.width / (self.num_cols * 2.2)
+        height_per_cell = (self.parent.size.height - 2) / self.num_rows
+
+        limiting_dimention = min(width_per_cell, height_per_cell)
+
+        self.styles.width = limiting_dimention * self.num_cols * 2.2
+        self.styles.height = limiting_dimention * self.num_rows + 2
+
+    def on_resize(self):
+
+        self.update_size()
+
+    def on_mount(self):
+
+        self.update_size()
+
+class ChessBoardContainer(Static):
+
+    def __init__(self, board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom):
+        super().__init__()
+        self.board = board
+        self.colour_at_bottom = colour_at_bottom
+        self.num_rows = num_rows
+        self.num_cols = num_cols
+        self.piece_style = piece_style
+        self.board_colour = board_colour
+
+    def compose(self):
+        yield ChessBoardWithAccessories(self.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
+
+    def on_resize(self):
+
+        width_per_cell = self.size.width / (self.num_cols * 2.2)
+        height_per_cell = (self.size.height - 2) / self.num_rows
+
+        limiting_dimention = min(width_per_cell, height_per_cell)
+
+        chess_board_with_accessories = self.query_one("ChessBoardWithAccessories")
+
+        chess_board_with_accessories.styles.width = limiting_dimention * self.num_cols * 2.2
+        chess_board_with_accessories.styles.height = limiting_dimention * self.num_rows + 2
 
 class ChessGame(Screen):
 
@@ -263,7 +323,7 @@ class ChessGame(Screen):
     def compose(self):
 
         with Grid(id="game_grid"):
-            yield ChessBoardWithAccessories(self.chess_board.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
+            yield ChessBoardContainer(self.chess_board.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
             yield MoveDataTable()
             yield StatusBar()
 

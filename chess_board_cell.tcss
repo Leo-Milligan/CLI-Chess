@@ -23,26 +23,39 @@ MainMenu {
     margin-bottom: 2;
 }
 
-.cell {
-    width: 1fr;
-    height: 1fr;
-    content-align: center middle;
-}
-
 #game_grid {
     grid-size: 2 2;
     grid-rows: 1fr 2;
-    grid-columns: 4fr 1fr
+    grid-columns: 4fr 1fr;
+}
+
+ChessBoardContainer {
+    width: 100%;
+    height: 100%;
+    align: center middle;
+    margin: 1 2;
+}
+
+ChessBoardGrid {
+    grid-rows: 1fr;
+    grid-columns: 1fr;
+}
+
+ChessBoardWithAccessories {
+    grid-rows: 1fr;
+    grid-columns: 1fr;
+}
+
+.cell {
+    content-align: center middle;
+    width: 100%;
+    height: 100%;
 }
 
 #white_captured_pieces_display {
     height: 1;
     width: 100%;
     background: $panel;
-}
-
-ChessBoardWithAccessories {
-    margin: 1 2;
 }
 
 #black_captured_pieces_display {
