@@ -26,7 +26,7 @@ class queen(piece):
         intermediate_position = [row_i + row_step, col_i + col_step]
 
         while intermediate_position != final_position:
-            intermediate_position_list.append(intermediate_position)
+            intermediate_position_list.append(intermediate_position.copy())
             intermediate_position_contents = self.chess_board.get_piece(intermediate_position)
             if not intermediate_position_contents:
                 intermediate_position[0] += row_step
