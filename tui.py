@@ -29,14 +29,13 @@ class MainMenu(Screen):
 ╚██████╗ ███████╗ ██║        ╚██████╗ ██║  ██║ ███████╗ ███████║ ███████║\n\
  ╚═════╝ ╚══════╝ ╚═╝         ╚═════╝ ╚═╝  ╚═╝ ╚══════╝ ╚══════╝ ╚══════╝"
 
-        with Grid(id="main_menu_stack"):
-            yield Static()
+        with Grid(id="main_menu_grid"):
             yield Label(title, id="title")
-            yield Static()
-            yield Static()
-            with Grid(id="main_menu_buttons"):
-                yield Button("Play", variant="success", id="play_button")
-                yield Button("Quit", variant="error", id="quit_button")
+            yield Button("Play", variant="success", id="play_button")
+            yield Button("Quit", variant="error", id="quit_button")
+
+    def on_mount(self):
+        self.query_one("#main_menu_grid", Grid).border_title = "Welcome To"
 
     def on_button_pressed(self, event):
 
@@ -133,9 +132,9 @@ class GameOverScreen(ModalScreen):
 
         with Grid(id="dialog"):
             yield Label(self.game_over_message, id="message")
-            yield Button("Menu", variant="error", id="menu_button")
-            yield Button("Restart", variant="success", id="restart_button")
-            yield Button("Review", variant="primary", id="review_button")
+            yield Button("Menu", variant="success", id="menu_button")
+            yield Button("Restart", variant="warning", id="restart_button")
+            yield Button("Review", variant="error", id="review_button")
 
     def on_button_pressed(self, event):
 
@@ -213,6 +212,31 @@ class MoveDataTable(DataTable):
         self.can_focus = False
         self.cursor_type = "row"
 
+class ChessBoardWithAccessories(Static):
+
+    def __init__(self, board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom):
+        super().__init__()
+        self.board = board
+        self.colour_at_bottom = colour_at_bottom
+        self.num_rows = num_rows
+        self.num_cols = num_cols
+        self.piece_style = piece_style
+        self.board_colour = board_colour
+
+    def compose(self):
+
+        if self.colour_at_bottom == "white":
+            upper_captured_pieces_display_id = "white_captured_pieces_display"
+            lower_captured_pieces_display_id = "black_captured_pieces_display"
+        else:
+            upper_captured_pieces_display_id = "black_captured_pieces_display"
+            lower_captured_pieces_display_id = "white_captured_pieces_display"
+
+        yield CapturedPiecesDisplay(id=upper_captured_pieces_display_id)
+        yield ChessBoardGrid(self.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
+        yield CapturedPiecesDisplay(id=lower_captured_pieces_display_id)
+
+
 class ChessGame(Screen):
 
     BINDINGS = [("a", "advance_move", "Advance Move"),
@@ -224,7 +248,14 @@ class ChessGame(Screen):
         super().__init__()
         self.chess_board = chess_board()
         self.game = game(self.chess_board)
+        self.chess_board.set_board()
+
+        self.num_rows = self.chess_board.num_rows
+        self.num_cols = self.chess_board.num_cols
+        self.piece_style = "small"
+        self.board_colour = "default"
         self.colour_at_bottom = "white"
+
         self.pending_question_information = None
         self.cached_move_information = None
         self.last_game_over_message = None
@@ -232,27 +263,10 @@ class ChessGame(Screen):
 
     def compose(self):
 
-        num_rows = self.chess_board.num_rows
-        num_cols = self.chess_board.num_cols
-
-        if self.colour_at_bottom == "white":
-            upper_captured_pieces_display_id = "white_captured_pieces_display"
-            lower_captured_pieces_display_id = "black_captured_pieces_display"
-        else:
-            upper_captured_pieces_display_id = "black_captured_pieces_display"
-            lower_captured_pieces_display_id = "white_captured_pieces_display"
-
-        self.chess_board.set_board()
-        board = self.chess_board.board
-
-        piece_style = "small"
-        board_colour = "default"
-
-        yield CapturedPiecesDisplay(id=upper_captured_pieces_display_id)
-        yield ChessBoardGrid(board, num_rows, num_cols, piece_style, board_colour, self.colour_at_bottom)
-        yield MoveDataTable()
-        yield CapturedPiecesDisplay(id=lower_captured_pieces_display_id)
-        yield StatusBar()
+        with Grid(id="game_grid"):
+            yield ChessBoardWithAccessories(self.chess_board.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
+            yield MoveDataTable()
+            yield StatusBar()
 
     def action_exit_review_mode(self):
         self.exit_review_mode()
@@ -291,8 +305,9 @@ class ChessGame(Screen):
 
     def on_mount(self):
 
-        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
         self.chess_board.update_castle_flag()
+        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
+
 
     @on(Input.Submitted)
     async def handle_user_input(self):
@@ -422,6 +437,7 @@ class ChessApp(App):
     SCREENS = {"main_menu": MainMenu, "chess_game": ChessGame}
 
     def on_mount(self):
+        self.theme = "nord"
         self.push_screen("main_menu")
 
 if __name__ == "__main__":
