@@ -6,7 +6,7 @@ from Pieces import *
 
 from textual import on
 from textual.app import App
-from textual.containers import Grid, HorizontalGroup, VerticalGroup
+from textual.containers import Grid, HorizontalGroup
 from textual.widgets import Static, Input, Label, Button, Footer, DataTable
 from textual.color import Color
 from textual.reactive import reactive
