@@ -33,15 +33,21 @@ ChessBoardContainer {
     width: 100%;
     height: 100%;
     align: center middle;
-    margin: 1 0 1 2;
+    margin: 1 0 1 1;
 }
 
-ChessBoardGrid {
+ChessBoardWithAccessories {
     grid-rows: 1fr;
     grid-columns: 1fr;
 }
 
-ChessBoardWithAccessories {
+#chess_board_with_markers_grid {
+    grid-size: 3 3;
+    grid-rows: 1 1fr 1;
+    grid-columns: 2 1fr 2;
+}
+
+ChessBoardGrid {
     grid-rows: 1fr;
     grid-columns: 1fr;
 }
@@ -50,6 +56,16 @@ ChessBoardWithAccessories {
     content-align: center middle;
     width: 100%;
     height: 100%;
+}
+
+PositionMarker {
+    content-align: center middle;
+    text-style: bold;
+    width: 1fr;
+    height: 1fr;
+}
+
+BorderCorner {
 }
 
 #white_captured_pieces_display {

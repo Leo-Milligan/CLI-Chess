@@ -6,7 +6,7 @@ from Pieces import *
 
 from textual import on
 from textual.app import App
-from textual.containers import Grid, HorizontalGroup
+from textual.containers import Grid, HorizontalGroup, VerticalGroup
 from textual.widgets import Static, Input, Label, Button, Footer, DataTable
 from textual.color import Color
 from textual.reactive import reactive
@@ -95,7 +95,6 @@ class ChessBoardGrid(Grid):
         self.colour_at_bottom = colour_at_bottom
 
     def compose(self):
-
 
         self.styles.grid_size_columns = self.num_cols
         self.styles.grid_size_rows = self.num_rows
@@ -229,6 +228,37 @@ class MoveDataTable(DataTable):
     def on_resize(self):
         self.adjust_column_size()
 
+class PositionMarker(Static):
+
+    def __init__(self, marker_type, index, board_colour):
+        super().__init__()
+        self.marker_type = marker_type
+        self.index = index
+        self.board_colour = board_colour
+
+    def populate_cell(self):
+
+        if self.marker_type == "column":
+            contents = str(chr(self.index + 97))
+        else:
+            contents = str(self.index + 1)
+
+        self.update(contents)
+
+    def on_mount(self):
+
+        self.styles.background = Color.parse(ui_style_sheet["board_colours"][self.board_colour]["border_colour"])
+        self.populate_cell()
+
+class BorderCorner(Static):
+
+    def __init__(self, board_colour):
+        super().__init__()
+        self.board_colour = board_colour
+
+    def on_mount(self):
+        self.styles.background = Color.parse(ui_style_sheet["board_colours"][self.board_colour]["border_colour"])
+
 class ChessBoardWithAccessories(Static):
 
     def __init__(self, board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom):
@@ -249,19 +279,58 @@ class ChessBoardWithAccessories(Static):
             upper_captured_pieces_display_id = "black_captured_pieces_display"
             lower_captured_pieces_display_id = "white_captured_pieces_display"
 
+        if self.colour_at_bottom == "white":
+            vertical_range = range(self.num_cols - 1, -1, -1)
+            horizontal_range = range(self.num_cols)
+        else:
+            vertical_range = range(self.num_cols)
+            horizontal_range = range(self.num_cols - 1, -1, -1)
+
         yield CapturedPiecesDisplay(id=upper_captured_pieces_display_id)
-        yield ChessBoardGrid(self.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
+
+        with Grid(id="chess_board_with_markers_grid"):
+
+            yield BorderCorner(self.board_colour)
+
+            with HorizontalGroup():
+                for i in horizontal_range:
+                    yield PositionMarker("column", i, self.board_colour)
+
+            yield BorderCorner(self.board_colour)
+
+            with VerticalGroup():
+                for i in vertical_range:
+                    marker = PositionMarker("row", i, self.board_colour)
+                    marker.styles.content_align = ("left", "middle")
+                    yield marker
+
+            yield ChessBoardGrid(self.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
+
+            with VerticalGroup():
+                for i in vertical_range:
+                    marker = PositionMarker("row", i, self.board_colour)
+                    marker.styles.content_align = ("right", "middle")
+                    yield marker
+
+            yield BorderCorner(self.board_colour)
+
+            with HorizontalGroup():
+                for i in horizontal_range:
+                    yield PositionMarker("column", i, self.board_colour)
+
+            yield BorderCorner(self.board_colour)
+
         yield CapturedPiecesDisplay(id=lower_captured_pieces_display_id)
 
     def update_size(self):
 
-        width_per_cell = self.parent.size.width / (self.num_cols * 2.2)
-        height_per_cell = (self.parent.size.height - 2) / self.num_rows
+        width_per_cell = (self.parent.size.width - 4) / (self.num_cols * 2.2)
+        height_per_cell = (self.parent.size.height - 4) / self.num_rows
 
         limiting_dimention = int(min(width_per_cell, height_per_cell))
 
         self.styles.width = limiting_dimention * self.num_cols * 2.2
-        self.styles.height = limiting_dimention * self.num_rows + 2
+        self.styles.height = limiting_dimention * self.num_rows + 4
 
     def on_mount(self):
 
@@ -283,19 +352,15 @@ class ChessBoardContainer(Static):
 
     def on_resize(self):
 
-        width_per_cell = self.size.width / (self.num_cols * 2.2)
-        height_per_cell = (self.size.height - 2) / self.num_rows
+        width_per_cell = (self.size.width - 4) / (self.num_cols * 2.2)
+        height_per_cell = (self.size.height - 4) / self.num_rows
 
         limiting_dimention = int(min(width_per_cell, height_per_cell))
 
         chess_board_with_accessories = self.query_one("ChessBoardWithAccessories")
 
-        chess_board_with_accessories.styles.width = limiting_dimention * self.num_cols * 2.2
-        chess_board_with_accessories.styles.height = limiting_dimention * self.num_rows + 2
-
-        print(width_per_cell)
-        print(height_per_cell)
-        print(limiting_dimention)
+        chess_board_with_accessories.styles.width = limiting_dimention * self.num_cols * 2.2 + 4
+        chess_board_with_accessories.styles.height = limiting_dimention * self.num_rows + 4
 
 class ChessGame(Screen):
 

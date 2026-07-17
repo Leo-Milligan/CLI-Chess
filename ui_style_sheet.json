@@ -31,7 +31,8 @@
             "dark_square_colour": "rgb(150, 100, 60)",
             "light_square_colour": "rgb(210, 195, 180)",
             "dark_piece_colour": "rgb(0, 0, 0)",
-            "light_piece_colour": "rgb(255, 255, 255)"
+            "light_piece_colour": "rgb(255, 255, 255)",
+            "border_colour": "rgb(107, 73, 44)"
         }
     }
 }
