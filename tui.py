@@ -101,11 +101,13 @@ class ChessBoardGrid(Grid):
 
         if self.colour_at_bottom == "white":
             col_range = range(self.num_cols-1,-1,-1)
+            row_range = range(self.num_rows)
         else:
             col_range = range(self.num_cols)
+            row_range = range(self.num_rows - 1, -1, -1)
 
         for col in col_range:
-            for row in range(self.num_rows):
+            for row in row_range:
                 cell = Cell(self.board, self.board_colour, self.piece_symbols, row, col)
                 cell.colour_cell()
                 cell.populate_cell()
@@ -379,7 +381,7 @@ class ChessGame(Screen):
         self.num_cols = self.chess_board.num_cols
         self.piece_style = "small"
         self.board_colour = "default"
-        self.colour_at_bottom = "white"
+        self.colour_at_bottom = "black"
 
         self.pending_question_information = None
         self.cached_move_information = None
