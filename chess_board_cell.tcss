@@ -33,7 +33,7 @@ ChessBoardContainer {
     width: 100%;
     height: 100%;
     align: center middle;
-    margin: 1 2;
+    margin: 1 0 1 2;
 }
 
 ChessBoardGrid {

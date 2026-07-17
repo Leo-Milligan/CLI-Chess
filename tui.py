@@ -14,6 +14,7 @@ from textual.screen import Screen, ModalScreen
 
 import copy
 import json
+import math
 
 
 ui_style_sheet = json.load(open("ui_style_sheet.json", encoding="utf-8"))
@@ -257,14 +258,10 @@ class ChessBoardWithAccessories(Static):
         width_per_cell = self.parent.size.width / (self.num_cols * 2.2)
         height_per_cell = (self.parent.size.height - 2) / self.num_rows
 
-        limiting_dimention = min(width_per_cell, height_per_cell)
+        limiting_dimention = int(min(width_per_cell, height_per_cell))
 
         self.styles.width = limiting_dimention * self.num_cols * 2.2
         self.styles.height = limiting_dimention * self.num_rows + 2
-
-    def on_resize(self):
-
-        self.update_size()
 
     def on_mount(self):
 
@@ -289,12 +286,16 @@ class ChessBoardContainer(Static):
         width_per_cell = self.size.width / (self.num_cols * 2.2)
         height_per_cell = (self.size.height - 2) / self.num_rows
 
-        limiting_dimention = min(width_per_cell, height_per_cell)
+        limiting_dimention = int(min(width_per_cell, height_per_cell))
 
         chess_board_with_accessories = self.query_one("ChessBoardWithAccessories")
 
         chess_board_with_accessories.styles.width = limiting_dimention * self.num_cols * 2.2
         chess_board_with_accessories.styles.height = limiting_dimention * self.num_rows + 2
+
+        print(width_per_cell)
+        print(height_per_cell)
+        print(limiting_dimention)
 
 class ChessGame(Screen):
 
