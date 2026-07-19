@@ -135,9 +135,9 @@ class GameOverScreen(ModalScreen):
 
         with Grid(id="dialog"):
             yield Label(self.game_over_message, id="message")
-            yield Button("Menu", variant="success", id="menu_button")
-            yield Button("Restart", variant="warning", id="restart_button")
-            yield Button("Review", variant="error", id="review_button")
+            yield Button("Restart", variant="success", id="restart_button")
+            yield Button("Review", variant="warning", id="review_button")
+            yield Button("Menu", variant="error", id="menu_button")
 
     def on_button_pressed(self, event):
 
@@ -381,7 +381,7 @@ class ChessGame(Screen):
         self.num_cols = self.chess_board.num_cols
         self.piece_style = "small"
         self.board_colour = "default"
-        self.colour_at_bottom = "black"
+        self.colour_at_bottom = "white"
 
         self.pending_question_information = None
         self.cached_move_information = None
@@ -393,7 +393,13 @@ class ChessGame(Screen):
         with Grid(id="game_grid"):
             yield ChessBoardContainer(self.chess_board.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
             yield MoveDataTable()
-            yield StatusBar()
+
+            with Grid(id="lower_section"):
+                yield StatusBar()
+
+                footer = Footer()
+                footer.display = False
+                yield footer
 
     def action_exit_review_mode(self):
         self.exit_review_mode()
@@ -402,23 +408,13 @@ class ChessGame(Screen):
 
         self.game.advance_once_using_move_delta()
         self.refresh_bindings()
-        self.query_one(ChessBoardGrid).update_board()
-        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
-        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
-        if self.game.move_number > 1:
-            self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
+        self.update_ui()
 
     def action_undo_move(self):
 
         self.game.undo_once_using_move_delta()
         self.refresh_bindings()
-        self.query_one(ChessBoardGrid).update_board()
-        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
-        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
-        if self.game.move_number > 1:
-            self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
+        self.update_ui()
 
     def check_action(self, action, parameters):
 
@@ -435,12 +431,10 @@ class ChessGame(Screen):
         self.chess_board.update_castle_flag()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
 
-
     @on(Input.Submitted)
     async def handle_user_input(self):
 
         self.clear_message()
-
         command_line = self.query_one(Input)
         player_input = command_line.value.strip(" +#!?")
         command_line.value = ""
@@ -478,6 +472,15 @@ class ChessGame(Screen):
 
         result = self.game.apply_move(move_information)
 
+        self.update_ui()
+
+        self.check_for_game_end(result)
+
+        if result["message"]:
+            await self.display_message(result["message"])
+
+    def update_ui(self):
+
         self.query_one(ChessBoardGrid).update_board()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
         self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
@@ -485,11 +488,6 @@ class ChessGame(Screen):
         self.query_one(MoveDataTable).move_notation_history = copy.deepcopy(self.game.move_notation_history)
         if self.game.move_number > 1:
             self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
-
-        self.check_for_game_end(result)
-
-        if result["message"]:
-            await self.display_message(result["message"])
 
     def check_for_game_end(self, result):
 
@@ -508,13 +506,7 @@ class ChessGame(Screen):
     def reset_game_and_ui(self):
 
         self.game.reset_game()
-        self.query_one(ChessBoardGrid).update_board()
-        self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-        self.query_one("#white_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_white_pieces.copy()
-        self.query_one("#black_captured_pieces_display", CapturedPiecesDisplay).captured_piece_list = self.game.captured_black_pieces.copy()
-        self.query_one(MoveDataTable).move_notation_history = copy.deepcopy(self.game.move_notation_history)
-        if self.game.move_number > 1:
-            self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
+        self.update_ui()
 
     def handle_game_over(self, choice):
 
@@ -540,19 +532,14 @@ class ChessGame(Screen):
     def enter_review_mode(self):
 
         self.query_one(StatusBar).display = False
-
-        if not self.query(Footer):
-            self.mount(Footer())
+        self.query_one(Footer).display = True
 
         self.review_mode = True
 
     def exit_review_mode(self):
 
         self.query_one(StatusBar).display = True
-
-        footer = self.query(Footer)
-        if footer:
-            footer.remove()
+        self.query_one(Footer).display = False
 
         self.review_mode = False
 
