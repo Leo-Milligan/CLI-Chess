@@ -713,8 +713,8 @@ class game:
             move_delta["castling_information"]["side"] = move_information["side"]
             move_delta["castling_information"]["king_initial_position"] = list(self.chess_board.king_positions[self.turn_colour])
             move_delta["castling_information"]["rook_initial_position"] = list(self.chess_board.find_rook_to_castle(move_information["side"], self.turn_colour))
-            move_delta["king"] = self.chess_board.get_piece(move_delta["castling_information"]["king_initial_position"])
-            move_delta["rook"] = self.chess_board.get_piece(move_delta["castling_information"]["rook_initial_position"])
+            move_delta["castling_information"]["king"] = self.chess_board.get_piece(move_delta["castling_information"]["king_initial_position"])
+            move_delta["castling_information"]["rook"] = self.chess_board.get_piece(move_delta["castling_information"]["rook_initial_position"])
 
             move_delta["game_metadata"]["move_number"] = self.move_number
             move_delta["game_metadata"]["turn_colour"] = self.turn_colour
