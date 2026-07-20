@@ -7,17 +7,19 @@ from Pieces import *
 from textual import on
 from textual.app import App
 from textual.containers import Grid, HorizontalGroup, VerticalGroup
-from textual.widgets import Static, Input, Label, Button, Footer, DataTable
+from textual.widgets import Static, Input, Label, Button, Footer, DataTable, Tabs, Tab, Digits
 from textual.color import Color
 from textual.reactive import reactive
 from textual.screen import Screen, ModalScreen
 
 import copy
 import json
-import math
-
+import socket
 
 ui_style_sheet = json.load(open("ui_style_sheet.json", encoding="utf-8"))
+
+host = socket.gethostbyname(socket.gethostname())
+port = 9999
 
 class MainMenu(Screen):
 
@@ -32,7 +34,9 @@ class MainMenu(Screen):
 
         with Grid(id="main_menu_grid"):
             yield Label(title, id="title")
-            yield Button("Play", variant="success", id="play_button")
+            yield Button("Singleplayer - Comming Soon!", variant="success", disabled=True, id="play_button_ai")
+            yield Button("Multiplayer (Local)", variant="success", id="play_button_local")
+            yield Button("Mulitplayer (LAN)", variant="success", id="play_button_lan")
             yield Button("Quit", variant="error", id="quit_button")
 
     def on_mount(self):
@@ -42,8 +46,71 @@ class MainMenu(Screen):
 
         if event.button.id == "quit_button":
             self.app.exit()
-        elif event.button.id == "play_button":
+        elif event.button.id == "play_button_local":
             self.app.push_screen(ChessGame())
+        elif event.button.id == "play_button_lan":
+            self.app.push_screen(LanChoiceScreen())
+
+class LanChoiceScreen(Screen):
+
+    def compose(self):
+
+        with Grid(id="lan_choice_grid"):
+
+            yield Tabs(Tab("Host", id="host_tab"),
+                       Tab("Join", id="join_tab"))
+
+            with Grid(id="tab_content_grid"):
+
+                with HorizontalGroup(id="host_ip_line"):
+                    yield Label("IP Address: ", id="ip_address_label")
+                    yield Digits(host, id="ip_display")
+                yield Button("Start Server", variant="success", id="host_button")
+
+                with HorizontalGroup(id="join_input_line"):
+                    yield Label("Enter IP: ", id="join_message")
+                    yield Input(placeholder= "e.g. 127.0.0.1", id="join_input")
+                yield Button("Join", variant="success", id="join_button")
+
+                yield Button("Back", variant="error", id="return_main_menu")
+
+    def on_tabs_tab_activated(self, event):
+
+        host_button = self.query_one("#host_button", Button)
+        host_ip_line = self.query_one("#host_ip_line", HorizontalGroup)
+        join_button = self.query_one("#join_button", Button)
+        join_input_line = self.query_one("#join_input_line", HorizontalGroup)
+
+        if event.tab.id == "host_tab":
+            host_ip_line.display = True
+            host_button.display = True
+
+            join_input_line.display = False
+            join_button.display = False
+        else:
+            join_input_line.display = True
+            join_button.display = True
+
+            host_ip_line.display = False
+            host_button.display = False
+
+    def on_button_pressed(self, event):
+
+        if event.button.id == "return_main_menu":
+            self.app.pop_screen()
+        elif event.button.id == "host_button":
+            if not self.server:
+                self.server = True
+                self.query_one("#host_button", Button).label = "Stop Server"
+                self.query_one("#host_button", Button).variant = "warning"
+            elif self.server:
+                self.server = False
+                self.query_one("#host_button", Button).label = "Start Server"
+                self.query_one("#host_button", Button).variant = "success"
+
+    def on_mount(self):
+        self.query_one("#lan_choice_grid", Grid).border_title = "Multiplayer (LAN)"
+        self.server = True
 
 class Cell(Static):
 

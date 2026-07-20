@@ -6,10 +6,10 @@ MainMenu {
 #main_menu_grid {
     grid-size: 1;
     grid-gutter: 1 2;
-    grid-rows: 1fr 3 5;
+    grid-rows: 1fr 3 3 3 5;
     padding: 0 4;
     width: 83;
-    height: 22;
+    height: 30;
     border: round white;
     border-title-align: center;
     background: $panel;
@@ -21,6 +21,43 @@ MainMenu {
     width: 1fr;
     content-align: center middle;
     margin-bottom: 2;
+}
+
+LanChoiceScreen {
+    align: center middle;
+    hatch: right $surface;
+}
+
+#lan_choice_grid {
+    grid-size: 1 3;
+    grid-gutter: 1 2;
+    grid-rows: 1fr 11;
+    padding: 0 4;
+    width: 83;
+    height: 20;
+    border: round white;
+    border-title-align: center;
+    background: $panel;
+    align: center middle;
+}
+
+#tab_content_grid {
+    grid-gutter: 1 2;
+    grid-rows: auto;
+}
+
+#join_message {
+    height: 3;
+    content-align: center middle;
+}
+
+#join_input {
+    width: 63;
+}
+
+#ip_address_label {
+    height: 3;
+    content-align: center middle;
 }
 
 #game_grid {
