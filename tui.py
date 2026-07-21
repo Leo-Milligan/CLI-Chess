@@ -3,6 +3,7 @@
 from board import chess_board
 from game import game
 from Pieces import *
+from network import network
 
 from textual import on
 from textual.app import App
@@ -15,11 +16,10 @@ from textual.screen import Screen, ModalScreen
 import copy
 import json
 import socket
+import threading
 
 ui_style_sheet = json.load(open("ui_style_sheet.json", encoding="utf-8"))
 
-host = socket.gethostbyname(socket.gethostname())
-port = 9999
 
 class MainMenu(Screen):
 
@@ -53,6 +53,15 @@ class MainMenu(Screen):
 
 class LanChoiceScreen(Screen):
 
+    connection_made = reactive(False)
+    pop_up_message = reactive(None)
+
+    def __init__(self):
+        super().__init__()
+        self.host = socket.gethostbyname(socket.gethostname())
+        self.port = 9999
+        self.player_colour = "white"
+
     def compose(self):
 
         with Grid(id="lan_choice_grid"):
@@ -64,7 +73,7 @@ class LanChoiceScreen(Screen):
 
                 with HorizontalGroup(id="host_ip_line"):
                     yield Label("IP Address: ", id="ip_address_label")
-                    yield Digits(host, id="ip_display")
+                    yield Digits(self.host, id="ip_display")
                 yield Button("Start Server", variant="success", id="host_button")
 
                 with HorizontalGroup(id="join_input_line"):
@@ -72,7 +81,7 @@ class LanChoiceScreen(Screen):
                     yield Input(placeholder= "e.g. 127.0.0.1", id="join_input")
                 yield Button("Join", variant="success", id="join_button")
 
-                yield Button("Back", variant="error", id="return_main_menu")
+                yield Button("Back To Menu", variant="error", id="return_main_menu")
 
     def on_tabs_tab_activated(self, event):
 
@@ -98,19 +107,41 @@ class LanChoiceScreen(Screen):
 
         if event.button.id == "return_main_menu":
             self.app.pop_screen()
+
         elif event.button.id == "host_button":
-            if not self.server:
-                self.server = True
+
+            if not self.network.running:
+                self.network.host_game(self.host, self.port)
                 self.query_one("#host_button", Button).label = "Stop Server"
                 self.query_one("#host_button", Button).variant = "warning"
-            elif self.server:
-                self.server = False
+                self.query_one("#join_button", Button).disabled = True
+
+            elif self.network.running:
+                self.network.close_connection()
                 self.query_one("#host_button", Button).label = "Start Server"
                 self.query_one("#host_button", Button).variant = "success"
+                self.query_one("#join_button", Button).disabled = False
+
+        elif event.button.id == "join_button":
+
+            join_input = self.query_one("#join_input", Input)
+            host = join_input.value
+            self.network.connect_to_game(host, self.port)
+
+    def watch_connection_made(self):
+
+        if self.connection_made:
+            self.app.push_screen(ChessGame(network = self.network, player_colour = self.player_colour))
+
+    def watch_pop_up_message(self):
+
+        if self.pop_up_message:
+            self.app.notify(self.pop_up_message["message"], title = self.pop_up_message["title"], severity="warning")
+            self.pop_up_message = None
 
     def on_mount(self):
         self.query_one("#lan_choice_grid", Grid).border_title = "Multiplayer (LAN)"
-        self.server = True
+        self.network = network(self.app)
 
 class Cell(Static):
 
@@ -437,7 +468,9 @@ class ChessGame(Screen):
                 ("u", "undo_move", "Undo Move"),
                 ("q", "exit_review_mode", "Exit Review Mode")]
 
-    def __init__(self):
+    pop_up_message = reactive(None)
+
+    def __init__(self, piece_style = "small", board_colour = "default", player_colour = "white", network = None):
 
         super().__init__()
         self.chess_board = chess_board()
@@ -446,14 +479,17 @@ class ChessGame(Screen):
 
         self.num_rows = self.chess_board.num_rows
         self.num_cols = self.chess_board.num_cols
-        self.piece_style = "small"
-        self.board_colour = "default"
-        self.colour_at_bottom = "white"
+        self.piece_style = piece_style
+        self.board_colour = board_colour
+        self.player_colour = player_colour
+        self.colour_at_bottom = self.player_colour
 
         self.pending_question_information = None
         self.cached_move_information = None
         self.last_game_over_message = None
         self.review_mode = False
+
+        self.network = network
 
     def compose(self):
 
@@ -469,6 +505,7 @@ class ChessGame(Screen):
                 yield footer
 
     def action_exit_review_mode(self):
+
         self.exit_review_mode()
 
     def action_advance_move(self):
@@ -498,6 +535,9 @@ class ChessGame(Screen):
         self.chess_board.update_castle_flag()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
 
+        if self.network:
+            self.network.move_callback = self.action_move
+
     @on(Input.Submitted)
     async def handle_user_input(self):
 
@@ -505,6 +545,10 @@ class ChessGame(Screen):
         command_line = self.query_one(Input)
         player_input = command_line.value.strip(" +#!?")
         command_line.value = ""
+
+        if self.game.turn_colour != self.player_colour:
+            await self.display_message("Waiting for opponent's move...")
+            return
 
         if self.pending_question_information:
             move_information = self.game.interperate_user_preferences_answer(player_input, self.cached_move_information, self.pending_question_information)
@@ -537,14 +581,19 @@ class ChessGame(Screen):
             self.pending_question_information = None
             self.cached_move_information = None
 
+        if self.network:
+            self.network.send_move(move_information)
+
+        self.action_move(move_information)
+
+        if not self.network:
+            self.player_colour = self.game.turn_colour
+
+    def action_move(self, move_information):
+
         result = self.game.apply_move(move_information)
-
         self.update_ui()
-
         self.check_for_game_end(result)
-
-        if result["message"]:
-            await self.display_message(result["message"])
 
     def update_ui(self):
 
@@ -568,7 +617,10 @@ class ChessGame(Screen):
             return
 
         self.last_game_over_message = message
-        self.app.push_screen(GameOverScreen(message), self.handle_game_over)
+        if threading.current_thread() == threading.main_thread():
+            self.app.push_screen(GameOverScreen(message), self.handle_game_over)
+        else:
+            self.app.call_from_thread(self.app.push_screen, GameOverScreen(message), self.handle_game_over)
 
     def reset_game_and_ui(self):
 
@@ -591,6 +643,12 @@ class ChessGame(Screen):
         message_line.update(message)
 
         self.set_timer(2.5, self.clear_message)
+
+    def watch_pop_up_message(self):
+
+        if self.pop_up_message:
+            self.app.notify(self.pop_up_message["message"], title = self.pop_up_message["title"], severity="warning")
+            self.pop_up_message = None
 
     def clear_message(self):
         message_line = self.query_one("#message_line", Label)
