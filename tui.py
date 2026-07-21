@@ -53,6 +53,7 @@ class MainMenu(Screen):
 
 class LanChoiceScreen(Screen):
 
+    server_running = reactive(False)
     connection_made = reactive(False)
     pop_up_message = reactive(None)
 
@@ -103,6 +104,9 @@ class LanChoiceScreen(Screen):
             host_ip_line.display = False
             host_button.display = False
 
+    def update_server_button(self):
+        pass
+
     def on_button_pressed(self, event):
 
         if event.button.id == "return_main_menu":
@@ -112,21 +116,27 @@ class LanChoiceScreen(Screen):
 
             if not self.network.running:
                 self.network.host_game(self.host, self.port)
-                self.query_one("#host_button", Button).label = "Stop Server"
-                self.query_one("#host_button", Button).variant = "warning"
-                self.query_one("#join_button", Button).disabled = True
 
             elif self.network.running:
                 self.network.close_connection()
-                self.query_one("#host_button", Button).label = "Start Server"
-                self.query_one("#host_button", Button).variant = "success"
-                self.query_one("#join_button", Button).disabled = False
 
         elif event.button.id == "join_button":
 
             join_input = self.query_one("#join_input", Input)
             host = join_input.value
             self.network.connect_to_game(host, self.port)
+
+    def watch_server_running(self):
+
+            if not self.network.running:
+                self.query_one("#host_button", Button).label = "Start Server"
+                self.query_one("#host_button", Button).variant = "success"
+                self.query_one("#join_button", Button).disabled = False
+
+            elif self.network.running:
+                self.query_one("#host_button", Button).label = "Stop Server"
+                self.query_one("#host_button", Button).variant = "warning"
+                self.query_one("#join_button", Button).disabled = True
 
     def watch_connection_made(self):
 
@@ -142,6 +152,8 @@ class LanChoiceScreen(Screen):
     def on_mount(self):
         self.query_one("#lan_choice_grid", Grid).border_title = "Multiplayer (LAN)"
         self.network = network(self.app)
+        self.server_running = self.network.running
+        self.connection_made = self.network.connection_made
 
 class Cell(Static):
 
