@@ -53,8 +53,6 @@ class MainMenu(Screen):
 
 class LanChoiceScreen(Screen):
 
-    pop_up_message = reactive(None)
-
     def __init__(self):
         super().__init__()
         self.host = socket.gethostbyname(socket.gethostname())
@@ -137,12 +135,6 @@ class LanChoiceScreen(Screen):
 
         if self.app.connection_made:
             self.app.push_screen(ChessGame(network = self.network, player_colour = self.player_colour))
-
-    def watch_pop_up_message(self):
-
-        if self.pop_up_message:
-            self.app.notify(self.pop_up_message["message"], title = self.pop_up_message["title"], severity="warning")
-            self.pop_up_message = None
 
     def on_mount(self):
         self.query_one("#lan_choice_grid", Grid).border_title = "Multiplayer (LAN)"
@@ -475,8 +467,6 @@ class ChessGame(Screen):
                 ("u", "undo_move", "Undo Move"),
                 ("q", "exit_review_mode", "Exit Review Mode")]
 
-    pop_up_message = reactive(None)
-
     def __init__(self, piece_style = "small", board_colour = "default", player_colour = "white", network = None):
 
         super().__init__()
@@ -639,7 +629,7 @@ class ChessGame(Screen):
         if choice == "menu":
             self.game.reset_game()
 
-            if network:
+            if self.app.connection_made:
                 self.network.close_connection()
 
             self.app.pop_screen()
@@ -654,12 +644,6 @@ class ChessGame(Screen):
         message_line.update(message)
 
         self.set_timer(2.5, self.clear_message)
-
-    def watch_pop_up_message(self):
-
-        if self.pop_up_message:
-            self.app.notify(self.pop_up_message["message"], title = self.pop_up_message["title"], severity="warning")
-            self.pop_up_message = None
 
     def clear_message(self):
         message_line = self.query_one("#message_line", Label)
@@ -688,10 +672,17 @@ class ChessApp(App):
 
     network_running = reactive(False)
     connection_made = reactive(False)
+    pop_up_message = reactive(None)
 
     def on_mount(self):
         self.theme = "nord"
         self.push_screen("main_menu")
+
+    def watch_pop_up_message(self):
+
+        if self.pop_up_message:
+            self.app.notify(self.pop_up_message["message"], title = self.pop_up_message["title"], severity="warning")
+            self.pop_up_message = None
 
 if __name__ == "__main__":
     app = ChessApp()

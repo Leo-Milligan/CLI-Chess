@@ -17,21 +17,18 @@ class network:
 
     def __init__(self, app):
 
-        self.network_running = False
         self.app = app
         self.server = None
         self.client = None
-        self.connection_made = False
         self.is_server = None
         self.move_callback = None
 
     def host_game(self, host, port):
 
         with threading.Lock():
-            if self.network_running:
+            if self.app.network_running:
                 return
             else:
-                self.network_running = True
                 self.app.network_running =  True
 
         threading.Thread(target=self.server_loop, args=(host, port), daemon=True).start()
@@ -50,17 +47,16 @@ class network:
             except OSError:
                 return
 
-            self.connection_made = True
             self.app.call_from_thread(setattr, self.app, "connection_made", True)
             self.app.call_from_thread(setattr, self.app.screen, "player_colour", "white")
 
             threading.Thread(target=self.listen_for_moves, daemon=True).start()
 
         except Exception as e:
-            self.network_running = False
+            self.app.network_running = False
             self.app.call_from_thread(setattr, self.app, "network_running", False)
             message = {"title": "", "message": str(e)}
-            self.app.call_from_thread(setattr, self.app.screen, "pop_up_message", message)
+            self.app.call_from_thread(setattr, self.app, "pop_up_message", message)
 
             if self.server:
                 self.server.close()
@@ -69,10 +65,9 @@ class network:
     def connect_to_game(self, host, port):
 
         with threading.Lock():
-            if self.network_running == True:
+            if self.app.network_running == True:
                 return
             else:
-                self.network_running = True
                 self.app.network_running =  True
 
         threading.Thread(target=self.connect_to_game_loop, args=(host, port), daemon=True).start()
@@ -85,17 +80,16 @@ class network:
             self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client.connect((host, port))
 
-            self.connection_made = True
             self.app.call_from_thread(setattr, self.app.screen, "player_colour", "black")
             self.app.call_from_thread(setattr, self.app, "connection_made", True)
 
             threading.Thread(target=self.listen_for_moves, daemon=True).start()
 
         except Exception as e:
-            self.network_running = False
+            self.app.network_running = False
             self.app.call_from_thread(setattr, self.app, "network_running", False)
             message = {"title": "", "message": str(e)}
-            self.app.call_from_thread(setattr, self.app.screen, "pop_up_message", message)
+            self.app.call_from_thread(setattr, self.app, "pop_up_message", message)
 
             if self.client:
                 self.client.close()
@@ -103,13 +97,14 @@ class network:
 
     def listen_for_moves(self):
 
-        while self.network_running:
+        while self.app.network_running:
             try:
                 data = self.client.recv(1024).decode('utf-8')
 
                 if not data:
-                    message = {"title": "Connection Error:", "message": "Connection closed by opponent"}
-                    self.app.call_from_thread(setattr, self.app.screen, "pop_up_message", message)
+                    message = {"title": "", "message": "Connection closed."}
+                    self.app.call_from_thread(setattr, self.app, "pop_up_message", message)
+                    self.handle_disconnection()
                     break
 
                 move_information = json.loads(data)
@@ -121,14 +116,23 @@ class network:
                     self.move_callback(move_information)
 
             except (ConnectionResetError, BrokenPipeError, OSError):
-                message = {"title": "Connection:", "message": "Opponent disconnected."}
-                self.app.call_from_thread(setattr, self.app.screen, "pop_up_message", message)
+                message = {"title": "", "message": "Connection closed."}
+                self.app.call_from_thread(setattr, self.app, "pop_up_message", message)
+                self.handle_disconnection()
                 break
 
             except Exception as e:
                 message = {"title": "", "message": str(e)}
-                self.app.call_from_thread(setattr, self.app.screen, "pop_up_message", message)
+                self.app.call_from_thread(setattr, self.app, "pop_up_message", message)
+                self.handle_disconnection()
                 break
+
+    def handle_disconnection(self):
+
+        self.app.call_from_thread(self.close_connection)
+
+        while len(self.app.screen_stack) > 2:
+            self.app.call_from_thread(self.app.screen.dismiss)
 
     def send_move(self, move_information):
 
@@ -144,11 +148,10 @@ class network:
 
             except Exception as e:
                 message = {"title": "", "message": str(e)}
-                self.app.call_from_thread(setattr, self.app.screen, "pop_up_message", message)
+                self.app.call_from_thread(setattr, self.app, "pop_up_message", message)
 
     def close_connection(self):
 
-        self.network_running = False
         self.app.network_running = False
 
         if self.client:
@@ -167,7 +170,6 @@ class network:
                 pass
             self.server = None
 
-        self.connection_made = False
         self.app.connection_made = False
 
     def convert_piece_to_key(self, piece):
