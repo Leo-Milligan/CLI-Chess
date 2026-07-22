@@ -588,6 +588,13 @@ class ChessGame(Screen):
 
     def action_move(self, move_information):
 
+        if move_information.get("game_action") == "restart":
+
+            if not self.review_mode:
+                self.app.call_from_thread(self.app.pop_screen)
+                self.app.call_from_thread(self.reset_game_and_ui)
+                return
+
         result = self.game.apply_move(move_information)
         self.update_ui()
         self.check_for_game_end(result)
@@ -629,12 +636,17 @@ class ChessGame(Screen):
         if choice == "menu":
             self.game.reset_game()
 
-            if self.app.connection_made:
+            if self.network and self.app.connection_made:
                 self.network.close_connection()
 
             self.app.pop_screen()
         elif choice == "restart":
             self.reset_game_and_ui()
+
+            if self.network and self.app.connection_made:
+                data = {"game_action": "restart"}
+                self.network.send_move(data)
+
         elif choice == "review":
             self.enter_review_mode()
 
