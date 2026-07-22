@@ -17,7 +17,7 @@ class network:
 
     def __init__(self, app):
 
-        self.running = False
+        self.network_running = False
         self.app = app
         self.server = None
         self.client = None
@@ -28,11 +28,11 @@ class network:
     def host_game(self, host, port):
 
         with threading.Lock():
-            if self.running:
+            if self.network_running:
                 return
             else:
-                self.running = True
-                self.app.screen.server_running =  True
+                self.network_running = True
+                self.app.network_running =  True
 
         threading.Thread(target=self.server_loop, args=(host, port), daemon=True).start()
 
@@ -51,13 +51,14 @@ class network:
                 return
 
             self.connection_made = True
+            self.app.call_from_thread(setattr, self.app, "connection_made", True)
             self.app.call_from_thread(setattr, self.app.screen, "player_colour", "white")
-            self.app.call_from_thread(setattr, self.app.screen, "connection_made", True)
+
             threading.Thread(target=self.listen_for_moves, daemon=True).start()
 
         except Exception as e:
-            self.running = False
-            self.app.call_from_thread(setattr, self.app.screen, "server_running", False)
+            self.network_running = False
+            self.app.call_from_thread(setattr, self.app, "network_running", False)
             message = {"title": "", "message": str(e)}
             self.app.call_from_thread(setattr, self.app.screen, "pop_up_message", message)
 
@@ -68,11 +69,11 @@ class network:
     def connect_to_game(self, host, port):
 
         with threading.Lock():
-            if self.running == True:
+            if self.network_running == True:
                 return
             else:
-                self.running = True
-                self.app.screen.server_running =  True
+                self.network_running = True
+                self.app.network_running =  True
 
         threading.Thread(target=self.connect_to_game_loop, args=(host, port), daemon=True).start()
 
@@ -86,13 +87,13 @@ class network:
 
             self.connection_made = True
             self.app.call_from_thread(setattr, self.app.screen, "player_colour", "black")
-            self.app.call_from_thread(setattr, self.app.screen, "connection_made", True)
+            self.app.call_from_thread(setattr, self.app, "connection_made", True)
 
             threading.Thread(target=self.listen_for_moves, daemon=True).start()
 
         except Exception as e:
-            self.running = False
-            self.app.call_from_thread(setattr, self.app.screen, "server_running", False)
+            self.network_running = False
+            self.app.call_from_thread(setattr, self.app, "network_running", False)
             message = {"title": "", "message": str(e)}
             self.app.call_from_thread(setattr, self.app.screen, "pop_up_message", message)
 
@@ -102,7 +103,7 @@ class network:
 
     def listen_for_moves(self):
 
-        while self.running:
+        while self.network_running:
             try:
                 data = self.client.recv(1024).decode('utf-8')
 
@@ -147,9 +148,8 @@ class network:
 
     def close_connection(self):
 
-        with threading.Lock():
-            self.running = False
-            self.app.screen.server_running = False
+        self.network_running = False
+        self.app.network_running = False
 
         if self.client:
             try:
@@ -168,6 +168,7 @@ class network:
             self.server = None
 
         self.connection_made = False
+        self.app.connection_made = False
 
     def convert_piece_to_key(self, piece):
 

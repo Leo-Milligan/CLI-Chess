@@ -53,8 +53,6 @@ class MainMenu(Screen):
 
 class LanChoiceScreen(Screen):
 
-    server_running = reactive(False)
-    connection_made = reactive(False)
     pop_up_message = reactive(None)
 
     def __init__(self):
@@ -104,9 +102,6 @@ class LanChoiceScreen(Screen):
             host_ip_line.display = False
             host_button.display = False
 
-    def update_server_button(self):
-        pass
-
     def on_button_pressed(self, event):
 
         if event.button.id == "return_main_menu":
@@ -114,10 +109,10 @@ class LanChoiceScreen(Screen):
 
         elif event.button.id == "host_button":
 
-            if not self.network.running:
+            if not self.app.network_running:
                 self.network.host_game(self.host, self.port)
 
-            elif self.network.running:
+            elif self.app.network_running:
                 self.network.close_connection()
 
         elif event.button.id == "join_button":
@@ -126,21 +121,21 @@ class LanChoiceScreen(Screen):
             host = join_input.value
             self.network.connect_to_game(host, self.port)
 
-    def watch_server_running(self):
+    def watch_network_running(self):
 
-            if not self.network.running:
+            if not self.app.network_running:
                 self.query_one("#host_button", Button).label = "Start Server"
                 self.query_one("#host_button", Button).variant = "success"
                 self.query_one("#join_button", Button).disabled = False
 
-            elif self.network.running:
+            elif self.app.network_running:
                 self.query_one("#host_button", Button).label = "Stop Server"
                 self.query_one("#host_button", Button).variant = "warning"
                 self.query_one("#join_button", Button).disabled = True
 
     def watch_connection_made(self):
 
-        if self.connection_made:
+        if self.app.connection_made:
             self.app.push_screen(ChessGame(network = self.network, player_colour = self.player_colour))
 
     def watch_pop_up_message(self):
@@ -152,8 +147,8 @@ class LanChoiceScreen(Screen):
     def on_mount(self):
         self.query_one("#lan_choice_grid", Grid).border_title = "Multiplayer (LAN)"
         self.network = network(self.app)
-        self.server_running = self.network.running
-        self.connection_made = self.network.connection_made
+        self.watch(self.app, "network_running", self.watch_network_running)
+        self.watch(self.app, "connection_made", self.watch_connection_made)
 
 class Cell(Static):
 
@@ -643,6 +638,10 @@ class ChessGame(Screen):
 
         if choice == "menu":
             self.game.reset_game()
+
+            if network:
+                self.network.close_connection()
+
             self.app.pop_screen()
         elif choice == "restart":
             self.reset_game_and_ui()
@@ -686,6 +685,9 @@ class ChessApp(App):
 
     CSS_PATH = "chess_board_cell.tcss"
     SCREENS = {"main_menu": MainMenu, "chess_game": ChessGame}
+
+    network_running = reactive(False)
+    connection_made = reactive(False)
 
     def on_mount(self):
         self.theme = "nord"
