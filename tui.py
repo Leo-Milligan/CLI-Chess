@@ -594,6 +594,13 @@ class ChessGame(Screen):
                 self.app.call_from_thread(self.app.pop_screen)
                 self.app.call_from_thread(self.reset_game_and_ui)
                 return
+            elif self.review_mode:
+                print("1")
+                self.app.call_from_thread(self.exit_review_mode)
+                print("2")
+                self.app.call_from_thread(self.app.pop_screen)
+                self.app.call_from_thread(self.reset_game_and_ui)
+                return
 
         result = self.game.apply_move(move_information)
         self.update_ui()
@@ -669,6 +676,10 @@ class ChessGame(Screen):
         self.review_mode = True
 
     def exit_review_mode(self):
+
+        for _ in self.game.move_history:
+            self.game.advance_once_using_move_delta()
+            self.update_ui()
 
         self.query_one(StatusBar).display = True
         self.query_one(Footer).display = False
