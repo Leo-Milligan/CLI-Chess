@@ -543,7 +543,7 @@ class ChessGame(Screen):
         player_input = command_line.value.strip(" +#!?")
         command_line.value = ""
 
-        if self.game.turn_colour != self.player_colour:
+        if self.game.turn_colour != self.player_colour and (not player_input or player_input[0].lower() != "r"):
             await self.display_message("Waiting for opponent's move...")
             return
 
@@ -578,6 +578,8 @@ class ChessGame(Screen):
             self.pending_question_information = None
             self.cached_move_information = None
 
+        move_information["player_colour"] = self.player_colour
+
         if self.network:
             self.network.send_move(move_information)
 
@@ -595,9 +597,7 @@ class ChessGame(Screen):
                 self.app.call_from_thread(self.reset_game_and_ui)
                 return
             elif self.review_mode:
-                print("1")
                 self.app.call_from_thread(self.exit_review_mode)
-                print("2")
                 self.app.call_from_thread(self.app.pop_screen)
                 self.app.call_from_thread(self.reset_game_and_ui)
                 return

@@ -100,7 +100,7 @@ class game:
         result = {"check": False, "checkmate": False, "resign": False, "draw": False, "message": ""}
 
         if move_information["resign"]:
-            self.winner = self.opposite_colour
+            self.winner = self.opposite_colour if move_information["player_colour"] == self.turn_colour else self.turn_colour
             self.game_resigned = True
             result["resign"] = True
             return result
