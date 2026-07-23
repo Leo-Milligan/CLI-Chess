@@ -117,6 +117,9 @@ class network:
                 if self.move_callback:
                     self.app.call_from_thread(self.move_callback, move_information)
 
+            except socket.timeout:
+                continue
+
             except (ConnectionResetError, BrokenPipeError, OSError):
                 message = {"title": "", "message": "Connection closed."}
                 self.app.call_from_thread(setattr, self.app, "pop_up_message", message)

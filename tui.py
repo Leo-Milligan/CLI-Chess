@@ -553,7 +553,7 @@ class ChessGame(Screen):
 
         if not self.network and move_information["draw_offer"] and not self.game.immediate_draw_possible:
             question_id = "draw_offer"
-            question = "Opponent wants to draw, do you accept? (y/n): "
+            question = f"{self.game.turn_colour.capitalize()} wants to draw, do you accept? (y/n): "
             valid_answers = ["y", "n"]
 
             question_information = {"question_id": question_id, "question": question, "valid_answers": valid_answers}
@@ -617,7 +617,7 @@ class ChessGame(Screen):
             self.game.waiting_for_draw_response = False
             self.game.immediate_draw_possible = True
         elif move_information["draw_offer"] and not self.game.immediate_draw_possible:
-            self.update_command_line_prompt("Opponent wants to draw, do you accept? (y/n): ")
+            self.update_command_line_prompt(f"{self.game.turn_colour.capitalize()} wants to draw, do you accept? (y/n): ")
             self.game.pending_draw_offer_by_opponent = True
             return
 
