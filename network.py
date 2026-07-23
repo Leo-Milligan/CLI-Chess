@@ -44,6 +44,7 @@ class network:
 
             try:
                 self.client, address = self.server.accept()
+                self.client.settimeout(1.0)
             except OSError:
                 return
 
@@ -78,6 +79,7 @@ class network:
             self.is_server = False
 
             self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client.settimeout(1.0)
             self.client.connect((host, port))
 
             self.app.call_from_thread(setattr, self.app.screen, "player_colour", "black")
