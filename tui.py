@@ -501,39 +501,13 @@ class ChessGame(Screen):
                 footer.display = False
                 yield footer
 
-    def action_exit_review_mode(self):
-
-        self.exit_review_mode()
-
-    def action_advance_move(self):
-
-        self.game.advance_once_using_move_delta()
-        self.refresh_bindings()
-        self.update_ui()
-
-    def action_undo_move(self):
-
-        self.game.undo_once_using_move_delta()
-        self.refresh_bindings()
-        self.update_ui()
-
-    def check_action(self, action, parameters):
-
-        if action == "exit_review_mode" and not self.review_mode:
-            return False
-        if action == "advance_move" and self.game.move_number == (len(self.game.move_history) + 1):
-            return None
-        if action == "undo_move" and self.game.move_number == 1:
-            return None
-        return True
-
     def on_mount(self):
 
         self.chess_board.update_castle_flag()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
 
         if self.network:
-            self.network.move_callback = self.action_move
+            self.network.move_callback = self.action_opponent_move
 
     @on(Input.Submitted)
     async def handle_user_input(self):
@@ -543,18 +517,31 @@ class ChessGame(Screen):
         player_input = command_line.value.strip(" +#!?")
         command_line.value = ""
 
-        if self.game.turn_colour != self.player_colour and (not player_input or player_input[0].lower() != "r"):
+        if self.network and self.game.pending_draw_offer_by_opponent:
+            if player_input == "y":
+                self.game.pending_draw_offer_by_opponent = False
+                self.network.send_move({"valid": True, "resign": False, "draw_offer": True, "game_action": "accept_draw_offer"})
+                self.update_command_line_prompt("Enter Move: ")
+                self.game.immediate_draw_possible = True
+                await self.action_move({"valid": True, "resign": False, "draw_offer": True})
+                return
+            elif player_input == "n":
+                self.game.pending_draw_offer_by_opponent = False
+                self.update_command_line_prompt("Enter Move: ")
+                self.network.send_move({"game_action": "reject_draw_offer"})
+                return
+
+        if self.game.turn_colour != self.player_colour and player_input.lower() != "r":
             await self.display_message("Waiting for opponent's move...")
             return
 
         if self.pending_question_information:
             move_information = self.game.interperate_user_preferences_answer(player_input, self.cached_move_information, self.pending_question_information)
-            self.query_one(TurnLabel).turn_colour = self.game.turn_colour
         else:
             move_information = self.game.interperet_move_notation(list(player_input))
 
         if not move_information["valid"]:
-            self.query_one("#command_line_prompt", Label).update("Enter Move: ")
+            self.update_command_line_prompt("Enter Move: ")
             self.pending_question_information = None
             self.cached_move_information = None
 
@@ -563,46 +550,82 @@ class ChessGame(Screen):
             return
 
         question_information = self.game.get_user_preferences_question(move_information)
+
+        if not self.network and move_information["draw_offer"] and not self.game.immediate_draw_possible:
+            question_id = "draw_offer"
+            question = "Opponent wants to draw, do you accept? (y/n): "
+            valid_answers = ["y", "n"]
+
+            question_information = {"question_id": question_id, "question": question, "valid_answers": valid_answers}
+
         if question_information:
-            self.query_one("#command_line_prompt", Label).update(question_information["question"])
+            self.update_command_line_prompt(question_information["question"])
             self.pending_question_information = question_information
             self.cached_move_information = move_information
-
-            if question_information["question_id"] == "draw_offer":
-                self.game.turn_colour, self.game.opposite_colour = self.game.opposite_colour, self.game.turn_colour
-                self.query_one(TurnLabel).turn_colour = self.game.turn_colour
-
             return
         else:
-            self.query_one("#command_line_prompt", Label).update("Enter Move: ")
+            self.update_command_line_prompt("Enter Move: ")
             self.pending_question_information = None
             self.cached_move_information = None
 
         move_information["player_colour"] = self.player_colour
 
+        if self.game.waiting_for_draw_response:
+            move_information["game_action"] = "reject_draw_due_to_move"
+            self.game.waiting_for_draw_response = False
+            await self.display_message("Draw offer rescinded!")
+
         if self.network:
             self.network.send_move(move_information)
 
-        self.action_move(move_information)
+        await self.action_move(move_information)
 
         if not self.network:
             self.player_colour = self.game.turn_colour
 
-    def action_move(self, move_information):
-
-        if move_information.get("game_action") == "restart":
-
-            if not self.review_mode:
-                self.app.call_from_thread(self.app.pop_screen)
-                self.app.call_from_thread(self.reset_game_and_ui)
-                return
-            elif self.review_mode:
-                self.app.call_from_thread(self.exit_review_mode)
-                self.app.call_from_thread(self.app.pop_screen)
-                self.app.call_from_thread(self.reset_game_and_ui)
-                return
+    async def action_move(self, move_information):
 
         result = self.game.apply_move(move_information)
+
+        if result["message"]:
+            await self.display_message(result["message"])
+
+        self.update_ui()
+        self.check_for_game_end(result)
+
+    async def action_opponent_move(self, move_information):
+
+        if move_information.get("game_action") == "restart":
+            if not self.review_mode:
+                self.app.pop_screen()
+                self.reset_game_and_ui()
+                return
+            elif self.review_mode:
+                self.exit_review_mode()
+                self.app.pop_screen()
+                self.reset_game_and_ui()
+                return
+        elif move_information.get("game_action") == "reject_draw_due_to_move":
+            await self.display_message("Draw offer rescinded!")
+            self.update_command_line_prompt("Enter Move: ")
+            self.game.pending_draw_offer_by_opponent = False
+        elif move_information.get("game_action") == "reject_draw_offer":
+            await self.display_message("Draw offer refused!")
+            self.game.waiting_for_draw_response = False
+            return
+        elif move_information.get("game_action") == "accept_draw_offer":
+            self.game.waiting_for_draw_response = False
+            self.game.immediate_draw_possible = True
+        elif move_information["draw_offer"] and not self.game.immediate_draw_possible:
+            self.update_command_line_prompt("Opponent wants to draw, do you accept? (y/n): ")
+            self.game.pending_draw_offer_by_opponent = True
+            return
+
+        result = self.game.apply_move(move_information)
+
+        if result["message"]:
+            await self.display_message(result["message"])
+
         self.update_ui()
         self.check_for_game_end(result)
 
@@ -615,6 +638,9 @@ class ChessGame(Screen):
         self.query_one(MoveDataTable).move_notation_history = copy.deepcopy(self.game.move_notation_history)
         if self.game.move_number > 1:
             self.query_one(MoveDataTable).move_cursor(row = self.game.move_number // 2 - 1)
+
+    def update_command_line_prompt(self, message):
+        self.query_one("#command_line_prompt", Label).update(message)
 
     def check_for_game_end(self, result):
 
@@ -687,6 +713,32 @@ class ChessGame(Screen):
         self.review_mode = False
 
         self.app.push_screen(GameOverScreen(self.last_game_over_message), self.handle_game_over)
+
+    def action_exit_review_mode(self):
+
+        self.exit_review_mode()
+
+    def action_advance_move(self):
+
+        self.game.advance_once_using_move_delta()
+        self.refresh_bindings()
+        self.update_ui()
+
+    def action_undo_move(self):
+
+        self.game.undo_once_using_move_delta()
+        self.refresh_bindings()
+        self.update_ui()
+
+    def check_action(self, action, parameters):
+
+        if action == "exit_review_mode" and not self.review_mode:
+            return False
+        if action == "advance_move" and self.game.move_number == (len(self.game.move_history) + 1):
+            return None
+        if action == "undo_move" and self.game.move_number == 1:
+            return None
+        return True
 
 class ChessApp(App):
 

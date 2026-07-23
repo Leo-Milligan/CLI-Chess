@@ -113,7 +113,7 @@ class network:
                     move_information["piece_type_to_move"] = self.convert_key_to_piece(move_information["piece_type_to_move"])
 
                 if self.move_callback:
-                    self.move_callback(move_information)
+                    self.app.call_from_thread(self.move_callback, move_information)
 
             except (ConnectionResetError, BrokenPipeError, OSError):
                 message = {"title": "", "message": "Connection closed."}

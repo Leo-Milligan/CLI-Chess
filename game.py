@@ -29,7 +29,8 @@ class game:
         self.game_resigned = False
 
         self.draw = False
-        self.draw_offered = False
+        self.pending_draw_offer_by_opponent = False
+        self.waiting_for_draw_response = False
         self.immediate_draw_possible = False
 
         self.chess_board = chess_board
@@ -107,6 +108,10 @@ class game:
         elif move_information["draw_offer"] and self.immediate_draw_possible:
             self.draw = True
             result["draw"] = True
+            return result
+        elif move_information["draw_offer"] and not self.immediate_draw_possible:
+            self.waiting_for_draw_response = True
+            result["message"] = "Draw offered to opponent..."
             return result
 
         move_delta = self.move_controller(move_information)
@@ -242,13 +247,6 @@ class game:
 
     def get_user_preferences_question(self, move_information):
 
-        if move_information["draw_offer"] and not self.immediate_draw_possible:
-            question_id = "draw_offer"
-            question = "Opponent wants to draw, do you accept? (y/n): "
-            valid_answers = ["y", "n"]
-
-            return {"question_id": question_id, "question": question, "valid_answers": valid_answers}
-
         if move_information.get("castling_flag") is not False or \
            move_information.get("resign") is not False:
             return None
@@ -338,12 +336,10 @@ class game:
         if question_information["question_id"] ==  "draw_offer":
             if player_input == "y":
                 self.immediate_draw_possible = True
-                self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
             elif player_input == "n":
                 move_information["valid"] = False
-                self.turn_colour, self.opposite_colour = self.opposite_colour, self.turn_colour
 
-        elif question_information["question_id"] ==  "piece_ambiguity":
+        if question_information["question_id"] ==  "piece_ambiguity":
             possible_initial_positions = move_information["initial_position"]
 
             if player_input == "x":
