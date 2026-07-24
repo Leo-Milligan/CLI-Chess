@@ -30,12 +30,12 @@ class piece:
         if valid is not True:
             return (False, error)
 
-        pinned_piece = self.chess_board.is_piece_pinned(initial_position)
-        if pinned_piece:
-            return(False, "Invalid move: piece is pinned.")
-
         initial_position_contents = self.chess_board.get_piece(initial_position)
         final_position_contents = self.chess_board.get_piece(final_position)
+
+        pinned_piece = self.check_move_blocked_by_pin(initial_position, final_position)
+        if pinned_piece:
+            return (False, "Invalid move: piece is pinned.")
 
         self.chess_board.remove_piece(initial_position)
         self.chess_board.insert_piece(initial_position_contents, final_position)
@@ -49,6 +49,28 @@ class piece:
             return (False, "Invalid move: defend your king!")
 
         return (True, None)
+
+    def check_move_blocked_by_pin(self, initial_position, final_position):
+
+        initial_position_contents = self.chess_board.get_piece(initial_position)
+        final_position_contents = self.chess_board.get_piece(final_position)
+
+        _, attacking_cells_pinning_piece_initial = self.chess_board.is_piece_pinned(initial_position)
+        if tuple(final_position) in attacking_cells_pinning_piece_initial:
+            attacking_cells_pinning_piece_initial.remove(tuple(final_position))
+
+        self.chess_board.remove_piece(initial_position)
+        self.chess_board.insert_piece(initial_position_contents, final_position)
+
+        _, attacking_cells_pinning_piece_final = self.chess_board.is_piece_pinned(final_position)
+
+        self.chess_board.insert_piece(initial_position_contents, initial_position)
+        self.chess_board.insert_piece(final_position_contents, final_position)
+
+        if set(attacking_cells_pinning_piece_initial) == set(attacking_cells_pinning_piece_final):
+            return False
+        else:
+            return True
 
     def get_possible_moves(self, initial_position):
 

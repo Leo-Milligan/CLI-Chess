@@ -85,7 +85,7 @@ class chess_board:
         row, col = position
         self.board[row][col] = None
 
-        if type(position_contents) == None:
+        if position_contents == None:
             return
 
         self.piece_positions[position_contents.colour].pop(tuple(position), None)
@@ -450,7 +450,7 @@ class chess_board:
             raise ValueError("There is no piece in this square.")
 
         if type(position_contents) == king:
-            return False
+            return False, []
 
         _, initial_attacking_cells = self.king_in_check(position_contents.colour)
 
@@ -460,10 +460,13 @@ class chess_board:
 
         self.insert_piece(position_contents, position)
 
-        if king_in_check and len(final_attacking_cells) > len(initial_attacking_cells):
-            return True
+        attacking_cells_pinning_piece = set(final_attacking_cells) - set(initial_attacking_cells)
+        attacking_cells_pinning_piece = list(attacking_cells_pinning_piece)
+
+        if king_in_check and attacking_cells_pinning_piece:
+            return True, attacking_cells_pinning_piece
         else:
-            return False
+            return False, attacking_cells_pinning_piece
 
     def get_cell_colour(self, position):
 
