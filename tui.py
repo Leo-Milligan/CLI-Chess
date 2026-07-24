@@ -24,6 +24,7 @@ ui_style_sheet = json.load(open("ui_style_sheet.json", encoding="utf-8"))
 class MainMenu(Screen):
 
     def compose(self):
+
         title = "\
  ██████╗ ██╗      ██╗         ██████╗ ██╗  ██╗ ███████╗ ███████╗ ███████╗\n\
 ██╔════╝ ██║      ██║        ██╔════╝ ██║  ██║ ██╔════╝ ██╔════╝ ██╔════╝\n\
@@ -40,6 +41,7 @@ class MainMenu(Screen):
             yield Button("Quit", variant="error", id="quit_button")
 
     def on_mount(self):
+
         self.query_one("#main_menu_grid", Grid).border_title = "Welcome To"
 
     def on_button_pressed(self, event):

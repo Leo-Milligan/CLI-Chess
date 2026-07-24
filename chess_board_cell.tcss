@@ -64,6 +64,7 @@ LanChoiceScreen {
     grid-size: 2 2;
     grid-rows: 1fr 2;
     grid-columns: 4fr 1fr;
+    hatch: right $surface;
 }
 
 ChessBoardContainer {
@@ -71,6 +72,7 @@ ChessBoardContainer {
     height: 100%;
     align: center middle;
     margin: 1 0 1 1;
+    hatch: right $surface;
 }
 
 ChessBoardWithAccessories {
