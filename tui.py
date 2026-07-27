@@ -8,7 +8,7 @@ from network import network
 from textual import on
 from textual.app import App
 from textual.containers import Grid, HorizontalGroup, VerticalGroup
-from textual.widgets import Static, Input, Label, Button, Footer, DataTable, Tabs, Tab, Digits
+from textual.widgets import Select, Static, Input, Label, Button, Footer, DataTable, Tabs, Tab, Digits
 from textual.color import Color
 from textual.reactive import reactive
 from textual.screen import Screen, ModalScreen
@@ -71,12 +71,12 @@ class LanChoiceScreen(Screen):
             with Grid(id="tab_content_grid"):
 
                 with HorizontalGroup(id="host_ip_line"):
-                    yield Label("IP Address: ", id="ip_address_label")
+                    yield Label("IP Address: ", id="ip_address_label", classes="centered_label")
                     yield Digits(self.host, id="ip_display")
                 yield Button("Start Server", variant="success", id="host_button")
 
                 with HorizontalGroup(id="join_input_line"):
-                    yield Label("Enter IP: ", id="join_message")
+                    yield Label("Enter IP: ", id="join_message", classes="centered_label")
                     yield Input(placeholder= "e.g. 127.0.0.1", id="join_input")
                 yield Button("Join", variant="success", id="join_button")
 
@@ -110,16 +110,16 @@ class LanChoiceScreen(Screen):
         elif event.button.id == "host_button":
 
             if not self.app.network_running:
-                self.network.host_game(self.host, self.port)
+                self.app.network.host_game(self.host, self.port)
 
             elif self.app.network_running:
-                self.network.close_connection()
+                self.app.network.close_connection()
 
         elif event.button.id == "join_button":
 
             join_input = self.query_one("#join_input", Input)
             host = join_input.value
-            self.network.connect_to_game(host, self.port)
+            self.app.network.connect_to_game(host, self.port)
 
     def watch_network_running(self):
 
@@ -136,13 +136,58 @@ class LanChoiceScreen(Screen):
     def watch_connection_made(self):
 
         if self.app.connection_made:
-            self.app.push_screen(ChessGame(network = self.network, player_colour = self.player_colour))
+            self.app.push_screen(ChessGame(player_colour = self.player_colour))
 
     def on_mount(self):
         self.query_one("#lan_choice_grid", Grid).border_title = "Multiplayer (LAN)"
-        self.network = network(self.app)
         self.watch(self.app, "network_running", self.watch_network_running)
         self.watch(self.app, "connection_made", self.watch_connection_made)
+
+class GamePreferencesScreen(Screen):
+
+    def __init__(self):
+        super().__init__()
+
+    def compose(self):
+
+        with Grid(id="game_preferences_grid"):
+
+            with Grid(id="drop_downs_and_labels"):
+                yield Label("Player-1 Colour: ", classes="centered_label")
+                yield Select(options = (("white", str), ("black", str)), allow_blank = False)
+
+                yield Label("Piece Type: ", classes="centered_label")
+                yield Select(options = (("small", str), ("letters", str)), allow_blank = False)
+
+                yield Label("Board Colours: ", classes="centered_label")
+                yield Select(options = (("default", str), (("forest", str))), allow_blank = False)
+
+            yield Button("Start Game", variant = "success", id="start_game_button")
+            yield Button("Back To Menu", variant="error", id="return_main_menu")
+
+    def on_button_pressed(self, event):
+
+        if event.button.id == "return_main_menu":
+
+            while len(self.app.screen_stack) > 2:
+                self.app.screen.dismiss()
+
+    def on_mount(self):
+
+        self.query_one("#game_preferences_grid", Grid).border_title = "Game Setup"
+
+class WaitingRoomScreen(Screen):
+
+    def compose(self):
+
+        with Grid(id="waiting_room_grid"):
+
+            yield Label("Waiting for host to begin the game...", classes="centered_label", id="waiting_room_message")
+            yield Button("Disconnect", variant="error")
+
+    def on_mount(self):
+
+        self.query_one("#waiting_room_grid", Grid).border_title = "Waiting Room"
 
 class Cell(Static):
 
@@ -469,7 +514,7 @@ class ChessGame(Screen):
                 ("u", "undo_move", "Undo Move"),
                 ("q", "exit_review_mode", "Exit Review Mode")]
 
-    def __init__(self, piece_style = "small", board_colour = "default", player_colour = "white", network = None):
+    def __init__(self, piece_style = "small", board_colour = "default", player_colour = "white"):
 
         super().__init__()
         self.chess_board = chess_board()
@@ -487,8 +532,6 @@ class ChessGame(Screen):
         self.cached_move_information = None
         self.last_game_over_message = None
         self.review_mode = False
-
-        self.network = network
 
     def compose(self):
 
@@ -508,8 +551,8 @@ class ChessGame(Screen):
         self.chess_board.update_castle_flag()
         self.query_one(TurnLabel).turn_colour = self.game.turn_colour
 
-        if self.network:
-            self.network.move_callback = self.action_opponent_move
+        if self.app.connection_made:
+            self.app.network.move_callback = self.action_opponent_move
 
     @on(Input.Submitted)
     async def handle_user_input(self):
@@ -519,10 +562,10 @@ class ChessGame(Screen):
         player_input = command_line.value.strip(" +#!?")
         command_line.value = ""
 
-        if self.network and self.game.pending_draw_offer_by_opponent:
+        if self.app.connection_made and self.game.pending_draw_offer_by_opponent:
             if player_input == "y":
                 self.game.pending_draw_offer_by_opponent = False
-                self.network.send_move({"valid": True, "resign": False, "draw_offer": True, "game_action": "accept_draw_offer"})
+                self.app.network.send_move({"valid": True, "resign": False, "draw_offer": True, "game_action": "accept_draw_offer"})
                 self.update_command_line_prompt("Enter Move: ")
                 self.game.immediate_draw_possible = True
                 await self.action_move({"valid": True, "resign": False, "draw_offer": True})
@@ -530,7 +573,7 @@ class ChessGame(Screen):
             elif player_input == "n":
                 self.game.pending_draw_offer_by_opponent = False
                 self.update_command_line_prompt("Enter Move: ")
-                self.network.send_move({"game_action": "reject_draw_offer"})
+                self.app.network.send_move({"game_action": "reject_draw_offer"})
                 return
 
         if self.game.turn_colour != self.player_colour and player_input.lower() != "r":
@@ -553,7 +596,7 @@ class ChessGame(Screen):
 
         question_information = self.game.get_user_preferences_question(move_information)
 
-        if not self.network and move_information["draw_offer"] and not self.game.immediate_draw_possible:
+        if not self.app.connection_made and move_information["draw_offer"] and not self.game.immediate_draw_possible:
             question_id = "draw_offer"
             question = f"{self.game.turn_colour.capitalize()} wants to draw, do you accept? (y/n): "
             valid_answers = ["y", "n"]
@@ -577,12 +620,12 @@ class ChessGame(Screen):
             self.game.waiting_for_draw_response = False
             await self.display_message("Draw offer rescinded!")
 
-        if self.network:
-            self.network.send_move(move_information)
+        if self.app.connection_made:
+            self.app.network.send_move(move_information)
 
         await self.action_move(move_information)
 
-        if not self.network:
+        if not self.app.connection_made:
             self.player_colour = self.game.turn_colour
 
     async def action_move(self, move_information):
@@ -671,16 +714,16 @@ class ChessGame(Screen):
         if choice == "menu":
             self.game.reset_game()
 
-            if self.network and self.app.connection_made:
-                self.network.close_connection()
+            if self.app.connection_made:
+                self.app.network.close_connection()
 
             self.app.pop_screen()
         elif choice == "restart":
             self.reset_game_and_ui()
 
-            if self.network and self.app.connection_made:
+            if self.app.connection_made:
                 data = {"game_action": "restart"}
-                self.network.send_move(data)
+                self.app.network.send_move(data)
 
         elif choice == "review":
             self.enter_review_mode()
@@ -745,15 +788,20 @@ class ChessGame(Screen):
 class ChessApp(App):
 
     CSS_PATH = "chess_board_cell.tcss"
-    SCREENS = {"main_menu": MainMenu, "chess_game": ChessGame}
+    SCREENS = {"main_menu": MainMenu, "chess_game": ChessGame, "lan_choice_screen": LanChoiceScreen, "game_preferences_screen": GamePreferencesScreen, "waiting_room_screen": WaitingRoomScreen}
 
     network_running = reactive(False)
     connection_made = reactive(False)
     pop_up_message = reactive(None)
 
+    def __init__(self):
+
+        super().__init__()
+
     def on_mount(self):
         self.theme = "nord"
         self.push_screen("main_menu")
+        self.network = network(self.app)
 
     def watch_pop_up_message(self):
 

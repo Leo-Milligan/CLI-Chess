@@ -15,22 +15,6 @@
             "bishop": "♗",
             "knight": "♘",
             "pawn": "♙"
-        },
-        "medium": {
-            "king": "",
-            "queen": "",
-            "rook": "",
-            "bishop": "",
-            "knight": "",
-            "pawn": ""
-        },
-        "large": {
-            "king": "",
-            "queen": "",
-            "rook": "",
-            "bishop": "",
-            "knight": "",
-            "pawn": ""
         }
     },
 

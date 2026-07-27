@@ -23,6 +23,11 @@ MainMenu {
     margin-bottom: 2;
 }
 
+.centered_label {
+    height: 3;
+    content-align: center middle;
+}
+
 LanChoiceScreen {
     align: center middle;
     hatch: right $surface;
@@ -46,18 +51,56 @@ LanChoiceScreen {
     grid-rows: auto;
 }
 
-#join_message {
-    height: 3;
-    content-align: center middle;
-}
-
 #join_input {
     width: 63;
 }
 
-#ip_address_label {
-    height: 3;
-    content-align: center middle;
+GamePreferencesScreen {
+    align: center middle;
+    hatch: right $surface;
+}
+
+#game_preferences_grid {
+    grid-size: 1 3;
+    grid-gutter: 1 2;
+    grid-rows: 1fr 3 3;
+    padding: 2 4;
+    width: 83;
+    height: 26;
+    border: round white;
+    border-title-align: center;
+    background: $panel;
+    align: center middle;
+}
+
+#drop_downs_and_labels {
+    grid-size: 2 3;
+    grid-gutter: 1 2;
+    grid-columns: auto 54;
+    grid-rows: 3;
+    width: 83;
+}
+
+WaitingRoomScreen {
+    align: center middle;
+    hatch: right $surface;
+}
+
+#waiting_room_grid {
+    grid-size: 1 2;
+    grid-gutter: 1 2;
+    grid-rows: 1fr 3;
+    padding: 1 4 2 4;
+    width: 83;
+    height: 12;
+    border: round white;
+    border-title-align: center;
+    background: $panel;
+    align: center middle;
+}
+
+#waiting_room_message {
+    width: 100%;
 }
 
 #game_grid {
