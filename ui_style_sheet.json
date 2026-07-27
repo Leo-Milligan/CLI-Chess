@@ -25,6 +25,20 @@
             "dark_piece_colour": "rgb(0, 0, 0)",
             "light_piece_colour": "rgb(255, 255, 255)",
             "border_colour": "rgb(107, 73, 44)"
+        },
+        "forest": {
+            "dark_square_colour": "rgb(118, 150, 86)",
+            "light_square_colour": "rgb(174, 191, 157)",
+            "dark_piece_colour": "rgb(0, 0, 0)",
+            "light_piece_colour": "rgb(255, 255, 255)",
+            "border_colour": "rgb(72, 90, 54)"
+        },
+        "lilac": {
+            "dark_square_colour": "rgb(140, 111, 169)",
+            "light_square_colour": "rgb(196, 185, 208)",
+            "dark_piece_colour": "rgb(0, 0, 0)",
+            "light_piece_colour": "rgb(255, 255, 255)",
+            "border_colour": "rgb(94, 72, 116)"
         }
     }
 }

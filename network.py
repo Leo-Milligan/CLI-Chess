@@ -106,7 +106,7 @@ class network:
                 if not data:
                     message = {"title": "", "message": "Connection closed."}
                     self.app.call_from_thread(setattr, self.app, "pop_up_message", message)
-                    self.handle_disconnection()
+                    self.app.call_from_thread(self.handle_disconnection)
                     break
 
                 move_information = json.loads(data)
@@ -134,10 +134,10 @@ class network:
 
     def handle_disconnection(self):
 
-        self.app.call_from_thread(self.close_connection)
+        self.close_connection()
 
         while len(self.app.screen_stack) > 2:
-            self.app.call_from_thread(self.app.screen.dismiss)
+            self.app.screen.dismiss()
 
     def send_move(self, move_information):
 

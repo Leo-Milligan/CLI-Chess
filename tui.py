@@ -49,7 +49,7 @@ class MainMenu(Screen):
         if event.button.id == "quit_button":
             self.app.exit()
         elif event.button.id == "play_button_local":
-            self.app.push_screen(ChessGame())
+            self.app.push_screen(GamePreferencesScreen())
         elif event.button.id == "play_button_lan":
             self.app.push_screen(LanChoiceScreen())
 
@@ -105,7 +105,7 @@ class LanChoiceScreen(Screen):
     def on_button_pressed(self, event):
 
         if event.button.id == "return_main_menu":
-            self.app.pop_screen()
+            self.app.network.handle_disconnection()
 
         elif event.button.id == "host_button":
 
@@ -136,7 +136,10 @@ class LanChoiceScreen(Screen):
     def watch_connection_made(self):
 
         if self.app.connection_made:
-            self.app.push_screen(ChessGame(player_colour = self.player_colour))
+            if self.app.network.is_server:
+                self.app.push_screen(GamePreferencesScreen())
+            else:
+                self.app.push_screen(WaitingRoomScreen())
 
     def on_mount(self):
         self.query_one("#lan_choice_grid", Grid).border_title = "Multiplayer (LAN)"
@@ -154,13 +157,13 @@ class GamePreferencesScreen(Screen):
 
             with Grid(id="drop_downs_and_labels"):
                 yield Label("Player-1 Colour: ", classes="centered_label")
-                yield Select(options = (("white", str), ("black", str)), allow_blank = False)
+                yield Select(options = (("white", "white"), ("black", "black")), allow_blank = False, id="player_colour_select")
 
                 yield Label("Piece Type: ", classes="centered_label")
-                yield Select(options = (("small", str), ("letters", str)), allow_blank = False)
+                yield Select(options = (("small", "small"), ("letters", "letters")), allow_blank = False, id="piece_type_select")
 
                 yield Label("Board Colours: ", classes="centered_label")
-                yield Select(options = (("default", str), (("forest", str))), allow_blank = False)
+                yield Select(options = (("default", "default"), (("forest", "forest")), (("lilac", "lilac"))), allow_blank = False, id="board_colour_select")
 
             yield Button("Start Game", variant = "success", id="start_game_button")
             yield Button("Back To Menu", variant="error", id="return_main_menu")
@@ -168,9 +171,22 @@ class GamePreferencesScreen(Screen):
     def on_button_pressed(self, event):
 
         if event.button.id == "return_main_menu":
+            self.app.network.handle_disconnection()
 
-            while len(self.app.screen_stack) > 2:
-                self.app.screen.dismiss()
+        elif event.button.id == "start_game_button":
+
+            player_1_colour = self.query_one("#player_colour_select", Select).selection
+            piece_type = self.query_one("#piece_type_select", Select).selection
+            board_colour = self.query_one("#board_colour_select", Select).selection
+
+            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_1_colour))
+
+            if self.app.connection_made:
+
+                player_2_colour = "white" if player_1_colour == "black" else "black"
+
+                message = {"game_action": "start_game", "piece_type": piece_type, "board_colour": board_colour, "player_2_colour": player_2_colour}
+                self.app.network.send_move(message)
 
     def on_mount(self):
 
@@ -183,11 +199,26 @@ class WaitingRoomScreen(Screen):
         with Grid(id="waiting_room_grid"):
 
             yield Label("Waiting for host to begin the game...", classes="centered_label", id="waiting_room_message")
-            yield Button("Disconnect", variant="error")
+            yield Button("Disconnect", variant="error", id="return_main_menu")
+
+    def on_button_pressed(self, event):
+
+        if event.button.id == "return_main_menu":
+            self.app.network.handle_disconnection()
+
+    def listen_for_game_start(self, move_information):
+
+        if move_information.get("game_action") == "start_game":
+            print("here")
+            piece_type = move_information["piece_type"]
+            board_colour = move_information["board_colour"]
+            player_2_colour = move_information["player_2_colour"]
+            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_2_colour))
 
     def on_mount(self):
 
         self.query_one("#waiting_room_grid", Grid).border_title = "Waiting Room"
+        self.app.network.move_callback = self.listen_for_game_start
 
 class Cell(Static):
 
@@ -525,8 +556,13 @@ class ChessGame(Screen):
         self.num_cols = self.chess_board.num_cols
         self.piece_style = piece_style
         self.board_colour = board_colour
-        self.player_colour = player_colour
-        self.colour_at_bottom = self.player_colour
+        self.colour_at_bottom = player_colour
+
+        if self.app.connection_made:
+            self.player_colour = player_colour
+        else:
+            self.player_colour = "white"
+
 
         self.pending_question_information = None
         self.cached_move_information = None
@@ -712,15 +748,10 @@ class ChessGame(Screen):
     def handle_game_over(self, choice):
 
         if choice == "menu":
-            self.game.reset_game()
+            self.app.network.handle_disconnection()
 
-            if self.app.connection_made:
-                self.app.network.close_connection()
-
-            self.app.pop_screen()
         elif choice == "restart":
             self.reset_game_and_ui()
-
             if self.app.connection_made:
                 data = {"game_action": "restart"}
                 self.app.network.send_move(data)
