@@ -17,6 +17,7 @@ import copy
 import json
 import socket
 import threading
+import time
 
 ui_style_sheet = json.load(open("ui_style_sheet.json", encoding="utf-8"))
 
@@ -157,10 +158,24 @@ class GamePreferencesScreen(Screen):
 
             with Grid(id="drop_downs_and_labels"):
                 yield Label("Player-1 Colour: ", classes="centered_label")
-                yield Select(options = (("white", "white"), ("black", "black")), allow_blank = False, id="player_colour_select")
+                yield Select(options = (("white", "white"),
+                                        ("black", "black")),
+                             allow_blank = False, id="player_colour_select")
+
+                yield Label("Time Control", classes="centered_label")
+                yield Select(options = (("Unlimited", (None, None)),
+                                        ("15 + 10", (15*60,10)),
+                                        ("10 + 5", (10*60,5)),
+                                        ("10 min", (10*60,0)),
+                                        ("5 min", (5*60,0)),
+                                        ("3 + 2", (3*60,2)),
+                                        ("3 min", (3*60,0))),
+                             allow_blank = False, id="time_control_select")
 
                 yield Label("Piece Type: ", classes="centered_label")
-                yield Select(options = (("small", "small"), ("letters", "letters")), allow_blank = False, id="piece_type_select")
+                yield Select(options = (("small", "small"),
+                                        ("letters", "letters")),
+                             allow_blank = False, id="piece_type_select")
 
                 yield Label("Board Colours: ", classes="centered_label")
                 yield Select(options = (("default", "default"), (("forest", "forest")), (("lilac", "lilac"))), allow_blank = False, id="board_colour_select")
@@ -178,8 +193,11 @@ class GamePreferencesScreen(Screen):
             player_1_colour = self.query_one("#player_colour_select", Select).selection
             piece_type = self.query_one("#piece_type_select", Select).selection
             board_colour = self.query_one("#board_colour_select", Select).selection
+            time_control = self.query_one("#time_control_select", Select).selection
+            time_allowance = time_control[0]
+            time_increment = time_control[1]
 
-            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_1_colour))
+            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_1_colour, time_allowance = time_allowance))
 
             if self.app.connection_made:
 
@@ -366,6 +384,26 @@ class CapturedPiecesDisplay(Label):
             if piece_name in list(self.piece_type_counts):
                 self.piece_type_counts[piece_name] += 1
 
+class TimeDisplay(Label):
+
+    start_time = reactive(time.monotonic)
+    time = reactive(0.0)
+
+    def __init__(self, time_allowance, id):
+        super().__init__(id=id)
+        self.time_allowance = time_allowance
+
+    def on_mount(self):
+        self.update_timer = self.set_interval(1 / 60, self.update_time)
+
+    def update_time(self):
+        print(self.time)
+        self.time = self.time_allowance - (time.monotonic() - self.start_time)
+
+    def watch_time(self, time):
+        minutes, seconds = divmod(time, 60)
+        self.update(f"{minutes:02.0f}:{seconds:05.2f}")
+
 class MoveDataTable(DataTable):
 
     move_notation_history = reactive({"white": [],
@@ -438,7 +476,7 @@ class BorderCorner(Static):
 
 class ChessBoardWithAccessories(Static):
 
-    def __init__(self, board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom):
+    def __init__(self, board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom, time_allowance):
         super().__init__()
         self.board = board
         self.colour_at_bottom = colour_at_bottom
@@ -446,15 +484,20 @@ class ChessBoardWithAccessories(Static):
         self.num_cols = num_cols
         self.piece_style = piece_style
         self.board_colour = board_colour
+        self.time_allowance = time_allowance
 
     def compose(self):
 
         if self.colour_at_bottom == "white":
             upper_captured_pieces_display_id = "white_captured_pieces_display"
             lower_captured_pieces_display_id = "black_captured_pieces_display"
+            upper_time_display_id = "black_time_display"
+            lower_time_display_id = "white_time_display"
         else:
             upper_captured_pieces_display_id = "black_captured_pieces_display"
             lower_captured_pieces_display_id = "white_captured_pieces_display"
+            upper_time_display_id = "white_time_display"
+            lower_time_display_id = "black_time_display"
 
         if self.colour_at_bottom == "white":
             vertical_range = range(self.num_cols - 1, -1, -1)
@@ -463,16 +506,17 @@ class ChessBoardWithAccessories(Static):
             vertical_range = range(self.num_cols)
             horizontal_range = range(self.num_cols - 1, -1, -1)
 
-        yield CapturedPiecesDisplay(id=upper_captured_pieces_display_id)
+        with HorizontalGroup(classes="information_bar"):
+            yield CapturedPiecesDisplay(id=upper_captured_pieces_display_id)
+            if self.time_allowance:
+                yield TimeDisplay(self.time_allowance, id=upper_time_display_id)
 
         with Grid(id="chess_board_with_markers_grid"):
 
             yield BorderCorner(self.board_colour)
-
             with HorizontalGroup():
                 for i in horizontal_range:
                     yield PositionMarker("column", i, self.board_colour)
-
             yield BorderCorner(self.board_colour)
 
             with VerticalGroup():
@@ -490,14 +534,15 @@ class ChessBoardWithAccessories(Static):
                     yield marker
 
             yield BorderCorner(self.board_colour)
-
             with HorizontalGroup():
                 for i in horizontal_range:
                     yield PositionMarker("column", i, self.board_colour)
-
             yield BorderCorner(self.board_colour)
 
-        yield CapturedPiecesDisplay(id=lower_captured_pieces_display_id)
+        with HorizontalGroup(classes="information_bar"):
+            yield CapturedPiecesDisplay(id=lower_captured_pieces_display_id)
+            if self.time_allowance:
+                yield TimeDisplay(self.time_allowance, id=lower_time_display_id)
 
     def update_size(self):
 
@@ -515,7 +560,7 @@ class ChessBoardWithAccessories(Static):
 
 class ChessBoardContainer(Static):
 
-    def __init__(self, board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom):
+    def __init__(self, board, num_rows, num_cols, piece_style, board_colour, colour_at_bottom, time_allowance):
         super().__init__()
         self.board = board
         self.colour_at_bottom = colour_at_bottom
@@ -523,9 +568,10 @@ class ChessBoardContainer(Static):
         self.num_cols = num_cols
         self.piece_style = piece_style
         self.board_colour = board_colour
+        self.time_allowance = time_allowance
 
     def compose(self):
-        yield ChessBoardWithAccessories(self.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
+        yield ChessBoardWithAccessories(self.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom, self.time_allowance)
 
     def on_resize(self):
 
@@ -545,7 +591,7 @@ class ChessGame(Screen):
                 ("u", "undo_move", "Undo Move"),
                 ("q", "exit_review_mode", "Exit Review Mode")]
 
-    def __init__(self, piece_style = "small", board_colour = "default", player_colour = "white"):
+    def __init__(self, piece_style = "small", board_colour = "default", player_colour = "white", time_allowance = None):
 
         super().__init__()
         self.chess_board = chess_board()
@@ -557,6 +603,7 @@ class ChessGame(Screen):
         self.piece_style = piece_style
         self.board_colour = board_colour
         self.colour_at_bottom = player_colour
+        self.time_allowance = time_allowance
 
         if self.app.connection_made:
             self.player_colour = player_colour
@@ -572,7 +619,7 @@ class ChessGame(Screen):
     def compose(self):
 
         with Grid(id="game_grid"):
-            yield ChessBoardContainer(self.chess_board.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom)
+            yield ChessBoardContainer(self.chess_board.board, self.num_rows, self.num_cols, self.piece_style, self.board_colour, self.colour_at_bottom, self.time_allowance)
             yield MoveDataTable()
 
             with Grid(id="lower_section"):

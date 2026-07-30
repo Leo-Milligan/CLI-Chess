@@ -66,7 +66,7 @@ GamePreferencesScreen {
     grid-rows: 1fr 3 3;
     padding: 2 4;
     width: 83;
-    height: 26;
+    height: 30;
     border: round white;
     border-title-align: center;
     background: $panel;
@@ -74,7 +74,7 @@ GamePreferencesScreen {
 }
 
 #drop_downs_and_labels {
-    grid-size: 2 3;
+    grid-size: 2 4;
     grid-gutter: 1 2;
     grid-columns: auto 54;
     grid-rows: 3;
@@ -147,16 +147,22 @@ PositionMarker {
     height: 1fr;
 }
 
-#white_captured_pieces_display {
+.information_bar {
+   height: 1;
+   width: 100%;
+}
+
+CapturedPiecesDisplay {
     height: 1;
-    width: 100%;
+    width: 1fr;
     background: $panel;
 }
 
-#black_captured_pieces_display {
-    height: 1;
-    width: 100%;
+TimeDisplay {
     background: $panel;
+    padding: 0 1;
+    border-left: $foreground;
+    border-right: $foreground;
 }
 
 MoveDataTable {
