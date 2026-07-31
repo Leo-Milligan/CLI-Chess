@@ -12,6 +12,7 @@ from textual.widgets import Select, Static, Input, Label, Button, Footer, DataTa
 from textual.color import Color
 from textual.reactive import reactive
 from textual.screen import Screen, ModalScreen
+from textual.message import Message
 
 import copy
 import json
@@ -169,7 +170,7 @@ class GamePreferencesScreen(Screen):
                                         ("10 min", (10*60,0)),
                                         ("5 min", (5*60,0)),
                                         ("3 + 2", (3*60,2)),
-                                        ("3 min", (3*60,0))),
+                                        ("3 min", (0.1*60,0))),
                              allow_blank = False, id="time_control_select")
 
                 yield Label("Piece Type: ", classes="centered_label")
@@ -392,7 +393,7 @@ class CapturedPiecesDisplay(Label):
 class TimeDisplay(Label):
 
     start_time = reactive(0)
-    time = reactive(0)
+    time = reactive(1)
     total_time_elapsed = reactive(0)
 
     def __init__(self, time_allowance, id):
@@ -404,11 +405,19 @@ class TimeDisplay(Label):
         self.update_timer = self.set_interval(1 / 60, self.update_time, pause=True)
 
     def update_time(self):
-        self.time = self.time_allowance - ( self.total_time_elapsed + (time.monotonic() - self.start_time) )
+        next_time = self.time_allowance - ( self.total_time_elapsed + (time.monotonic() - self.start_time) )
+        if next_time < 0:
+            self.time = 0
+        else:
+            self.time = next_time
 
     def watch_time(self, time):
         minutes, seconds = divmod(time, 60)
         self.update(f"{minutes:02.0f}:{seconds:05.2f}")
+
+        if self.time == 0:
+            print("sending message")
+            self.post_message(self.TimeDepleted())
 
     def start(self):
         self.start_time = time.monotonic()
@@ -418,6 +427,11 @@ class TimeDisplay(Label):
         self.update_timer.pause()
         if self.start_time > 0:
             self.total_time_elapsed += time.monotonic() - self.start_time
+
+    class TimeDepleted(Message):
+
+        def __init__(self):
+            super().__init__()
 
 class MoveDataTable(DataTable):
 
@@ -759,20 +773,35 @@ class ChessGame(Screen):
                 self.app.pop_screen()
                 self.reset_game_and_ui()
                 return
+
         elif move_information.get("game_action") == "reject_draw_due_to_move":
             await self.display_message("Draw offer rescinded!")
             self.update_command_line_prompt("Enter Move: ")
             self.game.pending_draw_offer_by_opponent = False
+
         elif move_information.get("game_action") == "reject_draw_offer":
             await self.display_message("Draw offer refused!")
             self.game.waiting_for_draw_response = False
             return
+
         elif move_information.get("game_action") == "accept_draw_offer":
             self.game.waiting_for_draw_response = False
             self.game.immediate_draw_possible = True
+
         elif move_information["draw_offer"] and not self.game.immediate_draw_possible:
             self.update_command_line_prompt(f"{self.game.turn_colour.capitalize()} wants to draw, do you accept? (y/n): ")
             self.game.pending_draw_offer_by_opponent = True
+            return
+
+        elif move_information["time_depleted"]:
+            white_timer = self.query_one("#white_time_display", TimeDisplay)
+            black_timer = self.query_one("#black_time_display", TimeDisplay)
+
+            white_timer.stop()
+            black_timer.stop()
+
+            white_timer.time = move_information["white_time"]
+            black_timer.time = move_information["black_time"]
             return
 
         result = self.game.apply_move(move_information)
@@ -782,6 +811,39 @@ class ChessGame(Screen):
 
         self.update_ui()
         self.check_for_game_end(result)
+
+        if self.time_allowance and (not self.game.winner and not self.game.draw):
+            white_timer = self.query_one("#white_time_display", TimeDisplay)
+            black_timer = self.query_one("#black_time_display", TimeDisplay)
+
+            if self.game.turn_colour == "white":
+                white_timer.start()
+                black_timer.stop()
+            else:
+                black_timer.start()
+                white_timer.stop()
+
+    def on_time_display_time_depleted(self, message):
+
+        print("message recieved")
+
+        white_timer = self.query_one("#white_time_display", TimeDisplay)
+        black_timer = self.query_one("#black_time_display", TimeDisplay)
+
+        white_timer.stop()
+        black_timer.stop()
+
+        if white_timer.time == 0:
+            self.game.winner = "black"
+        elif black_timer.time == 0:
+            self.game.winner = "white"
+
+        result = {"check": False, "checkmate": False, "resign": False, "draw": False, "time_depleted": True, "message": ""}
+        self.check_for_game_end(result)
+
+        if self.app.connection_made:
+            data = {"game_action": "time_depleted", "white_time": white_timer.time, "black_time": black_timer.time}
+            self.app.network.send_move(data)
 
     def update_ui(self):
 
@@ -798,14 +860,16 @@ class ChessGame(Screen):
 
     def check_for_game_end(self, result):
 
-        if result["resign"]:
-            message = f"{self.game.winner.capitalize()} Wins!"
-        elif result["checkmate"]:
+        if result["resign"] or result["checkmate"] or result["time_depleted"]:
             message = f"{self.game.winner.capitalize()} Wins!"
         elif result["draw"]:
             message = "Game ends in a draw!"
         else:
             return
+
+        if self.time_allowance:
+            self.query_one("#white_time_display", TimeDisplay).stop()
+            self.query_one("#black_time_display", TimeDisplay).stop()
 
         self.last_game_over_message = message
         if threading.current_thread() == threading.main_thread():
@@ -845,6 +909,10 @@ class ChessGame(Screen):
 
     def enter_review_mode(self):
 
+        if self.time_allowance:
+            self.query_one("#white_time_display", TimeDisplay).display = False
+            self.query_one("#black_time_display", TimeDisplay).display = False
+
         self.query_one(StatusBar).display = False
         self.query_one(Footer).display = True
 
@@ -855,6 +923,10 @@ class ChessGame(Screen):
         for _ in self.game.move_history:
             self.game.advance_once_using_move_delta()
             self.update_ui()
+
+        if self.time_allowance:
+            self.query_one("#white_time_display", TimeDisplay).display = True
+            self.query_one("#black_time_display", TimeDisplay).display = True
 
         self.query_one(StatusBar).display = True
         self.query_one(Footer).display = False

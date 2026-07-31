@@ -98,7 +98,7 @@ class game:
 
     def apply_move(self, move_information):
 
-        result = {"check": False, "checkmate": False, "resign": False, "draw": False, "message": ""}
+        result = {"check": False, "checkmate": False, "resign": False, "draw": False, "time_depleted": False, "message": ""}
 
         if move_information["resign"]:
             self.winner = self.opposite_colour if move_information["player_colour"] == self.turn_colour else self.turn_colour
