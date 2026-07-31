@@ -167,10 +167,10 @@ class GamePreferencesScreen(Screen):
                 yield Select(options = (("Unlimited", (None, None)),
                                         ("15 + 10", (15*60,10)),
                                         ("10 + 5", (10*60,5)),
-                                        ("10 min", (10*60,0)),
-                                        ("5 min", (5*60,0)),
+                                        ("10 + 0", (10*60,0)),
+                                        ("5 + 0", (5*60,0)),
                                         ("3 + 2", (3*60,2)),
-                                        ("3 min", (0.1*60,0))),
+                                        ("3 + 0", (3*60,0))),
                              allow_blank = False, id="time_control_select")
 
                 yield Label("Piece Type: ", classes="centered_label")
@@ -203,13 +203,13 @@ class GamePreferencesScreen(Screen):
             time_allowance = time_control[0]
             time_increment = time_control[1]
 
-            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_1_colour, time_allowance = time_allowance))
+            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_1_colour, time_allowance = time_allowance, time_increment = time_increment))
 
             if self.app.connection_made:
 
                 player_2_colour = "white" if player_1_colour == "black" else "black"
 
-                message = {"game_action": "start_game", "piece_type": piece_type, "board_colour": board_colour, "player_2_colour": player_2_colour, "time_allowance": time_allowance}
+                message = {"game_action": "start_game", "piece_type": piece_type, "board_colour": board_colour, "player_2_colour": player_2_colour, "time_allowance": time_allowance, "time_increment": time_increment}
                 self.app.network.send_move(message)
 
     def on_mount(self):
@@ -237,7 +237,8 @@ class WaitingRoomScreen(Screen):
             board_colour = move_information["board_colour"]
             player_2_colour = move_information["player_2_colour"]
             time_allowance = move_information["time_allowance"]
-            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_2_colour, time_allowance=time_allowance))
+            time_increment = move_information["time_increment"]
+            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_2_colour, time_allowance=time_allowance, time_increment=time_increment))
 
     def on_mount(self):
 
@@ -426,6 +427,12 @@ class TimeDisplay(Label):
         self.update_timer.pause()
         if self.start_time > 0:
             self.total_time_elapsed += time.monotonic() - self.start_time
+
+    def add_increment(self, increment):
+
+        if self.start_time > 0:
+            self.time += increment
+            self.total_time_elapsed -= increment
 
     class TimeDepleted(Message):
 
@@ -619,7 +626,7 @@ class ChessGame(Screen):
                 ("u", "undo_move", "Undo Move"),
                 ("q", "exit_review_mode", "Exit Review Mode")]
 
-    def __init__(self, piece_style = "small", board_colour = "default", player_colour = "white", time_allowance = None):
+    def __init__(self, piece_style = "small", board_colour = "default", player_colour = "white", time_allowance = None, time_increment = None):
 
         super().__init__()
         self.chess_board = chess_board()
@@ -632,6 +639,7 @@ class ChessGame(Screen):
         self.board_colour = board_colour
         self.colour_at_bottom = player_colour
         self.time_allowance = time_allowance
+        self.time_increment = time_increment
 
         if self.app.connection_made:
             self.player_colour = player_colour
@@ -756,9 +764,11 @@ class ChessGame(Screen):
             if self.game.turn_colour == "white":
                 white_timer.start()
                 black_timer.stop()
+                black_timer.add_increment(self.time_increment)
             else:
                 black_timer.start()
                 white_timer.stop()
+                white_timer.add_increment(self.time_increment)
 
     async def action_opponent_move(self, move_information):
 
