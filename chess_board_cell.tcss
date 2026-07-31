@@ -161,8 +161,7 @@ CapturedPiecesDisplay {
 TimeDisplay {
     background: $panel;
     padding: 0 1;
-    border-left: $foreground;
-    border-right: $foreground;
+    border-left: heavy $foreground;
 }
 
 MoveDataTable {
