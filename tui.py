@@ -430,9 +430,8 @@ class TimeDisplay(Label):
 
     def add_increment(self, increment):
 
-        if self.start_time > 0:
-            self.time += increment
-            self.total_time_elapsed -= increment
+        self.time += increment
+        self.total_time_elapsed -= increment
 
     class TimeDepleted(Message):
 
