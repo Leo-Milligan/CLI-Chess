@@ -174,7 +174,8 @@ class GamePreferencesScreen(Screen):
                              allow_blank = False, id="time_control_select")
 
                 yield Label("Piece Type: ", classes="centered_label")
-                yield Select(options = (("small", "small"),
+                yield Select(options = (("large", "large"),
+                                        ("small", "small"),
                                         ("letters", "letters")),
                              allow_blank = False, id="piece_type_select")
 
