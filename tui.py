@@ -233,7 +233,6 @@ class WaitingRoomScreen(Screen):
     def listen_for_game_start(self, move_information):
 
         if move_information.get("game_action") == "start_game":
-            print("here")
             piece_type = move_information["piece_type"]
             board_colour = move_information["board_colour"]
             player_2_colour = move_information["player_2_colour"]
@@ -416,7 +415,6 @@ class TimeDisplay(Label):
         self.update(f"{minutes:02.0f}:{seconds:05.2f}")
 
         if self.time == 0:
-            print("sending message")
             self.post_message(self.TimeDepleted())
 
     def start(self):
@@ -825,8 +823,6 @@ class ChessGame(Screen):
 
     def on_time_display_time_depleted(self, message):
 
-        print("message recieved")
-
         white_timer = self.query_one("#white_time_display", TimeDisplay)
         black_timer = self.query_one("#black_time_display", TimeDisplay)
 
@@ -879,8 +875,20 @@ class ChessGame(Screen):
 
     def reset_game_and_ui(self):
 
+        if self.time_allowance:
+            white_timer = self.query_one("#white_time_display", TimeDisplay)
+            black_timer = self.query_one("#black_time_display", TimeDisplay)
+
+            white_timer.time = self.time_allowance
+            white_timer.total_time_elapsed = 0
+            black_timer.time = self.time_allowance
+            black_timer.total_time_elapsed = 0
+
         self.game.reset_game()
         self.update_ui()
+
+        if not self.app.connection_made:
+            self.player_colour = self.game.turn_colour
 
     def handle_game_over(self, choice):
 
