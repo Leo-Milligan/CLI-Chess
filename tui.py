@@ -209,7 +209,7 @@ class GamePreferencesScreen(Screen):
 
                 player_2_colour = "white" if player_1_colour == "black" else "black"
 
-                message = {"game_action": "start_game", "piece_type": piece_type, "board_colour": board_colour, "player_2_colour": player_2_colour}
+                message = {"game_action": "start_game", "piece_type": piece_type, "board_colour": board_colour, "player_2_colour": player_2_colour, "time_allowance": time_allowance}
                 self.app.network.send_move(message)
 
     def on_mount(self):
@@ -236,7 +236,8 @@ class WaitingRoomScreen(Screen):
             piece_type = move_information["piece_type"]
             board_colour = move_information["board_colour"]
             player_2_colour = move_information["player_2_colour"]
-            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_2_colour))
+            time_allowance = move_information["time_allowance"]
+            self.app.push_screen(ChessGame(piece_style=piece_type, board_colour=board_colour, player_colour=player_2_colour, time_allowance=time_allowance))
 
     def on_mount(self):
 
@@ -772,6 +773,17 @@ class ChessGame(Screen):
                 self.reset_game_and_ui()
                 return
 
+        elif move_information.get("game_action") == "time_depleted":
+            white_timer = self.query_one("#white_time_display", TimeDisplay)
+            black_timer = self.query_one("#black_time_display", TimeDisplay)
+
+            white_timer.stop()
+            black_timer.stop()
+
+            white_timer.time = move_information["white_time"]
+            black_timer.time = move_information["black_time"]
+            return
+
         elif move_information.get("game_action") == "reject_draw_due_to_move":
             await self.display_message("Draw offer rescinded!")
             self.update_command_line_prompt("Enter Move: ")
@@ -789,17 +801,6 @@ class ChessGame(Screen):
         elif move_information["draw_offer"] and not self.game.immediate_draw_possible:
             self.update_command_line_prompt(f"{self.game.turn_colour.capitalize()} wants to draw, do you accept? (y/n): ")
             self.game.pending_draw_offer_by_opponent = True
-            return
-
-        elif move_information["time_depleted"]:
-            white_timer = self.query_one("#white_time_display", TimeDisplay)
-            black_timer = self.query_one("#black_time_display", TimeDisplay)
-
-            white_timer.stop()
-            black_timer.stop()
-
-            white_timer.time = move_information["white_time"]
-            black_timer.time = move_information["black_time"]
             return
 
         result = self.game.apply_move(move_information)
