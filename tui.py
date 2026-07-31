@@ -216,6 +216,8 @@ class GamePreferencesScreen(Screen):
     def on_mount(self):
 
         self.query_one("#game_preferences_grid", Grid).border_title = "Game Setup"
+        self.query_one("#start_game_button", Button).focus()
+
 
 class WaitingRoomScreen(Screen):
 
