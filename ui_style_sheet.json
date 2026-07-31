@@ -39,6 +39,20 @@
             "dark_piece_colour": "rgb(0, 0, 0)",
             "light_piece_colour": "rgb(255, 255, 255)",
             "border_colour": "rgb(94, 72, 116)"
+        },
+        "ocean": {
+            "dark_square_colour": "rgb(26, 123, 175)",
+            "light_square_colour": "rgb(100, 174, 213)",
+            "dark_piece_colour": "rgb(0, 0, 0)",
+            "light_piece_colour": "rgb(255, 255, 255)",
+            "border_colour": "rgb(17, 66, 92)"
+        },
+        "buttercup": {
+            "dark_square_colour": "rgb(172, 153, 70)",
+            "light_square_colour": "rgb(203, 193, 151)",
+            "dark_piece_colour": "rgb(0, 0, 0)",
+            "light_piece_colour": "rgb(255, 255, 255)",
+            "border_colour": "rgb(104, 93, 46)"
         }
     }
 }

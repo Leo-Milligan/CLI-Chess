@@ -178,7 +178,12 @@ class GamePreferencesScreen(Screen):
                              allow_blank = False, id="piece_type_select")
 
                 yield Label("Board Colours: ", classes="centered_label")
-                yield Select(options = (("default", "default"), (("forest", "forest")), (("lilac", "lilac"))), allow_blank = False, id="board_colour_select")
+                yield Select(options = (("default", "default"),
+                                        ("forest", "forest"),
+                                        ("lilac", "lilac"),
+                                        ("ocean", "ocean"),
+                                        ("butterbup", "buttercup")),
+                             allow_blank = False, id="board_colour_select")
 
             yield Button("Start Game", variant = "success", id="start_game_button")
             yield Button("Back To Menu", variant="error", id="return_main_menu")
@@ -386,23 +391,33 @@ class CapturedPiecesDisplay(Label):
 
 class TimeDisplay(Label):
 
-    start_time = reactive(time.monotonic)
-    time = reactive(0.0)
+    start_time = reactive(0)
+    time = reactive(0)
+    total_time_elapsed = reactive(0)
 
     def __init__(self, time_allowance, id):
         super().__init__(id=id)
         self.time_allowance = time_allowance
+        self.time = self.time_allowance
 
     def on_mount(self):
-        self.update_timer = self.set_interval(1 / 60, self.update_time)
+        self.update_timer = self.set_interval(1 / 60, self.update_time, pause=True)
 
     def update_time(self):
-        print(self.time)
-        self.time = self.time_allowance - (time.monotonic() - self.start_time)
+        self.time = self.time_allowance - ( self.total_time_elapsed + (time.monotonic() - self.start_time) )
 
     def watch_time(self, time):
         minutes, seconds = divmod(time, 60)
         self.update(f"{minutes:02.0f}:{seconds:05.2f}")
+
+    def start(self):
+        self.start_time = time.monotonic()
+        self.update_timer.resume()
+
+    def stop(self):
+        self.update_timer.pause()
+        if self.start_time > 0:
+            self.total_time_elapsed += time.monotonic() - self.start_time
 
 class MoveDataTable(DataTable):
 
@@ -720,6 +735,17 @@ class ChessGame(Screen):
 
         self.update_ui()
         self.check_for_game_end(result)
+
+        if self.time_allowance and (not self.game.winner and not self.game.draw):
+            white_timer = self.query_one("#white_time_display", TimeDisplay)
+            black_timer = self.query_one("#black_time_display", TimeDisplay)
+
+            if self.game.turn_colour == "white":
+                white_timer.start()
+                black_timer.stop()
+            else:
+                black_timer.start()
+                white_timer.stop()
 
     async def action_opponent_move(self, move_information):
 
