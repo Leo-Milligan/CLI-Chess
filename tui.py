@@ -648,7 +648,6 @@ class ChessGame(Screen):
         else:
             self.player_colour = "white"
 
-
         self.pending_question_information = None
         self.cached_move_information = None
         self.last_game_over_message = None

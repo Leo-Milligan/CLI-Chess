@@ -411,10 +411,10 @@ class chess_board:
 
             friendly_piece = self.get_piece(friendly_piece_position)
 
-            if friendly_piece == king:
+            if type(friendly_piece) == king:
                 continue
 
-            pinned_piece = self.is_piece_pinned(friendly_piece_position)
+            pinned_piece, _ = self.is_piece_pinned(friendly_piece_position)
             if pinned_piece:
                 continue
 
@@ -422,7 +422,7 @@ class chess_board:
                 initial_position_contents = self.get_piece(friendly_piece_position)
                 final_position_contents = self.get_piece(position)
 
-                valid, _ = initial_position_contents.check_move_validity(friendly_piece_position, position, True)
+                valid, error = initial_position_contents.check_move_validity(friendly_piece_position, position, True)
                 if not valid:
                     continue
 
