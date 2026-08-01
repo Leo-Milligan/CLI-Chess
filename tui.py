@@ -184,7 +184,7 @@ class GamePreferencesScreen(Screen):
                                         ("forest", "forest"),
                                         ("lilac", "lilac"),
                                         ("ocean", "ocean"),
-                                        ("butterbup", "buttercup")),
+                                        ("buttercup", "buttercup")),
                              allow_blank = False, id="board_colour_select")
 
             yield Button("Start Game", variant = "success", id="start_game_button")
