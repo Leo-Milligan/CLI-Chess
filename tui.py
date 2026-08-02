@@ -741,6 +741,13 @@ class ChessGame(Screen):
             await self.display_message("Draw offer rescinded!")
 
         if self.app.connection_made:
+
+            if self.time_allowance:
+                white_timer = self.query_one("#white_time_display", TimeDisplay)
+                black_timer = self.query_one("#black_time_display", TimeDisplay)
+                move_information["white_time"] = white_timer.time
+                move_information["black_time"] = black_timer.time
+
             self.app.network.send_move(move_information)
 
         await self.action_move(move_information)
@@ -813,6 +820,12 @@ class ChessGame(Screen):
             self.update_command_line_prompt(f"{self.game.turn_colour.capitalize()} wants to draw, do you accept? (y/n): ")
             self.game.pending_draw_offer_by_opponent = True
             return
+
+        if self.time_allowance:
+            white_timer = self.query_one("#white_time_display", TimeDisplay)
+            black_timer = self.query_one("#black_time_display", TimeDisplay)
+            white_timer.time = move_information["white_time"]
+            black_timer.time = move_information["black_time"]
 
         result = self.game.apply_move(move_information)
 
