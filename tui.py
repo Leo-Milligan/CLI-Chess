@@ -741,13 +741,13 @@ class ChessGame(Screen):
             await self.display_message("Draw offer rescinded!")
 
         if self.app.connection_made:
-
             if self.time_allowance:
                 white_timer = self.query_one("#white_time_display", TimeDisplay)
                 black_timer = self.query_one("#black_time_display", TimeDisplay)
                 move_information["white_time"] = white_timer.time
+                move_information["white_total_time_elapsed"] = white_timer.total_time_elapsed
                 move_information["black_time"] = black_timer.time
-
+                move_information["black_total_time_elapsed_black"] = black_timer.total_time_elapsed
             self.app.network.send_move(move_information)
 
         await self.action_move(move_information)
@@ -825,7 +825,9 @@ class ChessGame(Screen):
             white_timer = self.query_one("#white_time_display", TimeDisplay)
             black_timer = self.query_one("#black_time_display", TimeDisplay)
             white_timer.time = move_information["white_time"]
+            white_timer.total_time_elapsed = move_information["white_total_time_elapsed_black"]
             black_timer.time = move_information["black_time"]
+            black_timer.total_time_elapsed = move_information["black_total_time_elapsed_black"]
 
         result = self.game.apply_move(move_information)
 
