@@ -1,7 +1,7 @@
 [project]
-name = "cli-chess"
+name = "local-chess"
 version = "0.1.0"
-description = "Chess in your Terminal."
+description = "Chess, locally, in your Terminal."
 authors = [
     {name = "Leo Milligan",email = "leomilligan20@gmail.com"},
     {name = "Alainn Doyle",email = "alainndoyle@gmail.com"}
@@ -11,7 +11,6 @@ requires-python = ">=3.14,<4.0"
 dependencies = [
     "textual (>=8.2.8,<9.0.0)"
 ]
-
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
