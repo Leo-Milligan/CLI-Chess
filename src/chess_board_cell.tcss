@@ -8,7 +8,7 @@ MainMenu {
     grid-gutter: 1 2;
     grid-rows: 1fr 3 3 3 5;
     padding: 0 4;
-    width: 83;
+    width: 108;
     height: 30;
     border: round white;
     border-title-align: center;
