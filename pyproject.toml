@@ -6,8 +6,29 @@ authors = [
     {name = "Leo Milligan",email = "leomilligan20@gmail.com"},
     {name = "Alainn Doyle",email = "alainndoyle@gmail.com"}
 ]
-license = "GNU General Public License v3.0"
+license = "GPL-3.0-only"
 readme = "README.md"
+keywords = [
+  "chess",
+  "chess-game",
+  "chess-puzzle",
+  "command-line",
+  "game",
+  "local-area-network",
+  "local-chess",
+  "local-first",
+  "terminal",
+  "textual",
+  "tui"
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.14",
+  "Environment :: Console",
+  "Topic :: Games/Entertainment :: Board Games",
+  "Intended Audience :: End Users/Desktop",
+]
 requires-python = ">=3.14,<4.0"
 dependencies = [
     "textual (>=8.2.8,<9.0.0)"
