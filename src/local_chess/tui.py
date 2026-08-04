@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from board import chess_board
-from game import game
-from Pieces import *
-from network import network
+from .board import chess_board
+from .game import game
+from .pieces import *
+from .network import network
 
 from textual import on
 from textual.app import App
@@ -16,11 +16,15 @@ from textual.message import Message
 
 import copy
 import json
+import os
 import socket
 import threading
 import time
 
-ui_style_sheet = json.load(open("ui_style_sheet.json", encoding="utf-8"))
+current_directory = os.path.dirname(os.path.abspath(__file__))
+style_sheet_path = os.path.join(current_directory, "ui_style_sheet.json")
+
+ui_style_sheet = json.load(open(style_sheet_path, encoding="utf-8"))
 
 
 class MainMenu(Screen):

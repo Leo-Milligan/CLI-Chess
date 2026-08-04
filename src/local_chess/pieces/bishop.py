@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 
-from Pieces import piece
+from .piece import piece
 
-class rook(piece):
-
-    def __init__(self, colour, chess_board):
-        super().__init__(colour, chess_board)
-        self.can_castle_if_valid = False
+class bishop(piece):
 
     def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
 
@@ -18,9 +14,9 @@ class rook(piece):
         col_delta = col_f - col_i
         row_delta = row_f - row_i
 
-        is_straight = (col_delta == 0) or (row_delta == 0)
+        is_diagonal = abs(col_delta) == abs(row_delta)
 
-        if not is_straight:
+        if not is_diagonal:
             return (False, "Invalid move for this piece.", intermediate_position_list)
 
         col_step = int(col_delta / abs(col_delta)) if col_delta != 0 else 0
@@ -34,6 +30,7 @@ class rook(piece):
             if not intermediate_position_contents:
                 intermediate_position[0] += row_step
                 intermediate_position[1] += col_step
+                continue
             else:
                 return (False, "Move obstructed.", intermediate_position_list)
 
@@ -59,20 +56,24 @@ class rook(piece):
         cells_above_intial_position = self.chess_board.num_cols - (col_i + 1)
         cells_below_intial_position = col_i
 
-        for i in range(cells_left_of_intial_position):
-            row_f = row_i - (i + 1)
-            final_positions_to_check.append([row_f, col_i])
-
-        for i in range(cells_right_of_intial_position):
+        for i in range(min(cells_right_of_intial_position, cells_above_intial_position)):
             row_f = row_i + (i + 1)
-            final_positions_to_check.append([row_f, col_i])
-
-        for i in range(cells_below_intial_position):
-            col_f = col_i - (i + 1)
-            final_positions_to_check.append([row_i, col_f])
-
-        for i in range(cells_above_intial_position):
             col_f = col_i + (i + 1)
-            final_positions_to_check.append([row_i, col_f])
+            final_positions_to_check.append([row_f, col_f])
+
+        for i in range(min(cells_right_of_intial_position, cells_below_intial_position)):
+            row_f = row_i + (i + 1)
+            col_f = col_i - (i + 1)
+            final_positions_to_check.append([row_f, col_f])
+
+        for i in range(min(cells_left_of_intial_position, cells_above_intial_position)):
+            row_f = row_i - (i + 1)
+            col_f = col_i + (i + 1)
+            final_positions_to_check.append([row_f, col_f])
+
+        for i in range(min(cells_left_of_intial_position, cells_below_intial_position)):
+            row_f = row_i - (i + 1)
+            col_f = col_i - (i + 1)
+            final_positions_to_check.append([row_f, col_f])
 
         return final_positions_to_check

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-from Pieces import piece
+from .piece import piece
 
-class bishop(piece):
+class queen(piece):
 
     def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
 
@@ -14,9 +14,10 @@ class bishop(piece):
         col_delta = col_f - col_i
         row_delta = row_f - row_i
 
+        is_straight = (col_delta == 0) or (row_delta == 0)
         is_diagonal = abs(col_delta) == abs(row_delta)
 
-        if not is_diagonal:
+        if not (is_straight or is_diagonal):
             return (False, "Invalid move for this piece.", intermediate_position_list)
 
         col_step = int(col_delta / abs(col_delta)) if col_delta != 0 else 0
@@ -55,6 +56,22 @@ class bishop(piece):
 
         cells_above_intial_position = self.chess_board.num_cols - (col_i + 1)
         cells_below_intial_position = col_i
+
+        for i in range(cells_left_of_intial_position):
+            row_f = row_i - (i + 1)
+            final_positions_to_check.append([row_f, col_i])
+
+        for i in range(cells_right_of_intial_position):
+            row_f = row_i + (i + 1)
+            final_positions_to_check.append([row_f, col_i])
+
+        for i in range(cells_below_intial_position):
+            col_f = col_i - (i + 1)
+            final_positions_to_check.append([row_i, col_f])
+
+        for i in range(cells_above_intial_position):
+            col_f = col_i + (i + 1)
+            final_positions_to_check.append([row_i, col_f])
 
         for i in range(min(cells_right_of_intial_position, cells_above_intial_position)):
             row_f = row_i + (i + 1)

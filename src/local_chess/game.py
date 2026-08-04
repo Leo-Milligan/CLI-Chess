@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from Pieces import *
+from .pieces import *
 
 piece_mapping = {"K": king,
                  "Q": queen,

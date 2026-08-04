@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from Pieces import piece
+from .piece import piece
 
 class pawn(piece):
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from Pieces import *
+from .pieces import *
 
 piece_types = [king,
                queen,

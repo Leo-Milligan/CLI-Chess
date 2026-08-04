@@ -7,6 +7,7 @@ authors = [
     {name = "Alainn Doyle",email = "alainndoyle@gmail.com"}
 ]
 license = "GNU General Public License v3.0"
+readme = "README.md"
 requires-python = ">=3.14,<4.0"
 dependencies = [
     "textual (>=8.2.8,<9.0.0)"
@@ -15,3 +16,6 @@ dependencies = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[project.scripts]
+local-chess = "local_chess.entry_points:run"

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
-from Pieces import piece
+from .piece import piece
 
-class king(piece):
+class rook(piece):
+
+    def __init__(self, colour, chess_board):
+        super().__init__(colour, chess_board)
+        self.can_castle_if_valid = False
 
     def piece_specific_move_checks(self, initial_position, final_position, take_piece_flag):
 
@@ -14,7 +18,9 @@ class king(piece):
         col_delta = col_f - col_i
         row_delta = row_f - row_i
 
-        if (abs(col_delta) > 1) or (abs(row_delta) > 1):
+        is_straight = (col_delta == 0) or (row_delta == 0)
+
+        if not is_straight:
             return (False, "Invalid move for this piece.", intermediate_position_list)
 
         col_step = int(col_delta / abs(col_delta)) if col_delta != 0 else 0
@@ -28,7 +34,6 @@ class king(piece):
             if not intermediate_position_contents:
                 intermediate_position[0] += row_step
                 intermediate_position[1] += col_step
-                continue
             else:
                 return (False, "Move obstructed.", intermediate_position_list)
 
@@ -48,18 +53,26 @@ class king(piece):
 
         row_i, col_i = initial_position
 
-        for delta_row in [-1, 0, 1]:
-            for delta_col in [-1, 0, 1]:
+        cells_right_of_intial_position = self.chess_board.num_rows - (row_i + 1)
+        cells_left_of_intial_position = row_i
 
-                if delta_row == delta_col == 0:
-                    continue
+        cells_above_intial_position = self.chess_board.num_cols - (col_i + 1)
+        cells_below_intial_position = col_i
 
-                row_f = row_i + delta_row
-                col_f = col_i + delta_col
+        for i in range(cells_left_of_intial_position):
+            row_f = row_i - (i + 1)
+            final_positions_to_check.append([row_f, col_i])
 
-                valid, _ = self.chess_board.check_position_exists([row_f, col_f])
+        for i in range(cells_right_of_intial_position):
+            row_f = row_i + (i + 1)
+            final_positions_to_check.append([row_f, col_i])
 
-                if valid:
-                    final_positions_to_check.append([row_f, col_f])
+        for i in range(cells_below_intial_position):
+            col_f = col_i - (i + 1)
+            final_positions_to_check.append([row_i, col_f])
+
+        for i in range(cells_above_intial_position):
+            col_f = col_i + (i + 1)
+            final_positions_to_check.append([row_i, col_f])
 
         return final_positions_to_check
