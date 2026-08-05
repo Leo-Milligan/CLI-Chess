@@ -1,6 +1,6 @@
 [project]
 name = "local-chess"
-version = "0.1.0"
+version = "0.1.1"
 description = "Chess, locally, in your terminal."
 authors = [
     {name = "Leo Milligan",email = "leomilligan20@gmail.com"},
