@@ -50,6 +50,8 @@ poetry run local-chess
 
 ## Controls
 
-Chess inputs are made through entering moves into the input bar in [algebraic notation](https://en.wikipedia.org/wiki/Algebraic_notation_(chess)). At times the programme will try to help with any input errors. For example, giving you options to remove piece ambiguity or asking whether you meant to take a piece etc.
+Chess inputs are made through entering moves into the input bar in [algebraic notation](https://en.wikipedia.org/wiki/Algebraic_notation_(chess)). At times, the programme will try to help with any input errors. For example, giving you options to remove piece ambiguity or asking whether you meant to take a piece etc. 
+
+To offer a **draw**, enter **d**. To **resign**, enter **r**.
 
 You can either use the mouse to select buttons or swap between them using **TAB** and **SHIFT+TAB**.
